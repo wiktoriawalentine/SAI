@@ -90,7 +90,7 @@ const INITIAL_STATE: Indicators = {
   food: 80,
   rain: 85,
   trust: 65,
-  knowledge: 20,
+  knowledge: 10,
   aerosolBurden: 0,
   infrastructure: 90,
 };
@@ -98,57 +98,57 @@ const INITIAL_STATE: Indicators = {
 const targetMeta: Record<TargetChoice, { label: string; cost: number; short: string }> = {
   none: { label: 'No SAI / pause', cost: 0, short: 'Avoids aerosol side effects, but background warming continues.' },
   moderate: { label: 'Stabilize near 1.5°C', cost: 2, short: 'Balanced climate control with moderate side effects.' },
-  aggressive: { label: 'Aggressive cooling near 1.0°C', cost: 4, short: 'Reduces heat stress, but raises hydrological and agricultural risk.' },
-  emergency: { label: 'Emergency cooling near 0.8°C', cost: 5, short: 'Crisis intervention with high overcooling, rainfall and trust risk.' },
+  aggressive: { label: 'Aggressive cooling near 1.0°C', cost: 4, short: 'Reduces heat stress, but raises hydrological and agricultural side-effect pressure.' },
+  emergency: { label: 'Emergency cooling near 0.8°C', cost: 5, short: 'Crisis intervention with high overcooling, rainfall disruption and loss of trust.' },
 };
 
-const particleMeta: Record<ParticleChoice, { label: string; short: string; cost: number; known: string; risk: string }> = {
+const particleMeta: Record<ParticleChoice, { label: string; short: string; cost: number; known: string; uncertainty: string }> = {
   sulfate: {
     label: 'Sulfate particles',
     short: 'Known baseline',
     cost: 1,
-    known: 'Known cooling, known lifetime, known risks',
-    risk: 'Most studied material, but linked to stratospheric heating, ozone chemistry and deposition concerns.',
+    known: 'Known cooling, known lifetime, known uncertainties',
+    uncertainty: 'Most studied material, but linked to stratospheric heating, ozone chemistry and deposition concerns.',
   },
   caco3: {
     label: 'CaCO₃ / calcite particles',
     short: 'Partly known solid alternative',
     cost: 2,
-    known: 'Partly known cooling, partly known lifetime, partly known risks',
-    risk: 'Potentially useful alternative; acid uptake, ageing and heterogeneous chemistry remain uncertain.',
+    known: 'Partly known cooling, partly known lifetime, partly known uncertainties',
+    uncertainty: 'Potentially useful alternative; acid uptake, ageing and heterogeneous chemistry remain uncertain.',
   },
   alumina: {
     label: 'Alumina particles',
     short: 'High-performance but ozone-uncertain',
     cost: 3,
     known: 'Promising optical behaviour, uncertain surface chemistry',
-    risk: 'Can reduce some sulfate limitations, but chlorine activation and ozone loss are highly uncertain.',
+    uncertainty: 'Can reduce some sulfate limitations, but chlorine activation and ozone loss are highly uncertain.',
   },
   future: {
     label: 'Future engineered particle',
     short: 'Locked high-uncertainty material',
     cost: 4,
-    known: 'Unknown cooling, unknown lifetime, unknown risk',
-    risk: 'High reward only if research is high. Low knowledge creates large chemistry, rainfall and trust penalties.',
+    known: 'Unknown cooling, unknown lifetime, unknown uncertainty',
+    uncertainty: 'Strong only if research is high. Low knowledge creates large chemistry, rainfall and trust penalties.',
   },
 };
 
 const seasonMeta: Record<SeasonChoice, { label: string; cost: number; short: string }> = {
   annual: { label: 'Annual injection', cost: 0, short: 'Reference strategy; predictable but not regionally optimal.' },
-  spring: { label: 'Spring injection', cost: 1, short: 'More efficient cooling, but higher rainfall-trade-off risk in the game.' },
+  spring: { label: 'Spring injection', cost: 1, short: 'More efficient cooling, but stronger rainfall trade-off in the game.' },
   autumn: { label: 'Autumn injection', cost: 1, short: 'Better ice and India-rainfall trade-off in the seasonal paper.' },
 };
 
 const locationMeta: Record<LocationChoice, { label: string; cost: number; short: string }> = {
   tropical: { label: 'Tropical / equatorial injection', cost: 0, short: 'More global spread, but weaker polar rescue.' },
   subtropical: { label: 'Subtropical injection', cost: 1, short: 'Middle strategy between global control and polar targeting.' },
-  polar: { label: 'Polar injection', cost: 2, short: 'Strong ice protection, but high rainfall-inequality and governance risk.' },
+  polar: { label: 'Polar injection', cost: 2, short: 'Strong ice protection, but high rainfall redistribution and governance pressure.' },
 };
 
 const researchMeta: Record<ResearchChoice, { label: string; cost: number; short: string }> = {
   none: { label: 'No support action', cost: 0, short: 'Saves points, but uncertainty and social vulnerability remain.' },
   lab: { label: 'Laboratory particle testing', cost: 2, short: 'Raises knowledge; needed for alternative materials.' },
-  monitoring: { label: 'Monitoring and open data', cost: 2, short: 'Raises trust, lowers event risk and improves infrastructure.' },
+  monitoring: { label: 'Monitoring and open data', cost: 2, short: 'Raises trust, lowers event likelihood and improves infrastructure.' },
   adaptation: { label: 'Adaptation and compensation', cost: 2, short: 'Protects food/rain/trust when some regions are harmed.' },
 };
 
@@ -171,7 +171,7 @@ const sourceThemes = [
   },
   {
     title: 'Vattioni et al. (2023) — alumina and ozone uncertainty',
-    detail: 'Basis for alumina risk. Alumina surface chemistry is poorly constrained and modeled ozone impacts depend strongly on uncertain reaction assumptions.',
+    detail: 'Basis for alumina uncertainty. Alumina surface chemistry is poorly constrained and modeled ozone impacts depend strongly on uncertain reaction assumptions.',
   },
   {
     title: 'Proctor et al. (2018) — agriculture and volcanic aerosols',
@@ -183,7 +183,7 @@ const sourceThemes = [
   },
   {
     title: 'Haywood et al. (2013) — asymmetric forcing and Sahel rainfall',
-    detail: 'Basis for regional inequality events. Hemispherically asymmetric aerosol loading can create strong rainfall differences, including Sahel drought risk.',
+    detail: 'Basis for regional inequality events. Hemispherically asymmetric aerosol loading can create strong rainfall differences, including Sahel drought pressure.',
   },
   {
     title: 'Parker & Irvine (2018) — termination shock',
@@ -191,7 +191,7 @@ const sourceThemes = [
   },
   {
     title: 'Tracy et al. (2022) and Fu et al. (2025) — health/ecosystems and drought inequality',
-    detail: 'Basis for harder random events and trust loss. SAI may affect public health, ecosystems, water, agriculture and unequal drought exposure.',
+    detail: 'Basis for uncertainty events and trust loss. SAI may affect public health, ecosystems, water, agriculture and unequal drought exposure.',
   },
 ];
 
@@ -201,29 +201,6 @@ const researchNeeded = {
   models: ['atmospheric transport model', 'aerosol microphysics model', 'climate model', 'crop / food-security impact model'],
 };
 
-const exactRules = [
-  { option: 'Moderate target', effect: 'Temp → 1.5°C; food -1; rain -3; trust +1; burden +7; infrastructure -2' },
-  { option: 'Aggressive target', effect: 'Temp → 1.0°C; food +2 then sunlight penalty -5; rain -11; trust -6; burden +15; infrastructure -5' },
-  { option: 'Emergency target', effect: 'Temp → 0.8°C; food -9 then sunlight penalty -12; rain -20; trust -12; burden +22; infrastructure -8' },
-  { option: 'No SAI', effect: 'Temp follows background warming; ice/food/rain decline; burden decays by 12; sudden stop can trigger termination shock' },
-  { option: 'Annual season', effect: 'Ice +2; burden +2' },
-  { option: 'Spring season', effect: 'Temp -0.05°C; rain -9; ice -4; trust -3; burden -1' },
-  { option: 'Autumn season', effect: 'Ice +12; rain +1; trust +1; burden -1' },
-  { option: 'Tropical location', effect: 'Ice -4; rain -2' },
-  { option: 'Subtropical location', effect: 'Temp -0.05°C; ice +4; rain -4; food -1; burden +1' },
-  { option: 'Polar location', effect: 'Ice +18; rain -18; food -10; trust -8; burden +4; infrastructure -3' },
-  { option: 'Sulfate', effect: 'Knowledge +1; rain -2; trust -1; burden +4' },
-  { option: 'CaCO₃ / calcite', effect: 'Knowledge +3; food +1; trust -4 if knowledge <50, otherwise -2; burden +5' },
-  { option: 'Alumina', effect: 'Temp -0.05°C; knowledge +4; rain -1; trust -7 if knowledge <65, otherwise -3; burden +6' },
-  { option: 'Future particle', effect: 'Temp -0.10°C; knowledge +5; if knowledge ≤85: food -12, rain -10, trust -15, burden +9; if knowledge >85: food +6, rain +3, trust -4' },
-  { option: 'Laboratory testing', effect: 'Knowledge +18; trust +4; burden -2; infrastructure +1' },
-  { option: 'Monitoring', effect: 'Knowledge +9; trust +10; rain +2; food +2; burden -6; infrastructure +6; event risk -10%' },
-  { option: 'Adaptation', effect: 'Trust +14; food +8; rain +4; infrastructure +3' },
-  { option: 'Aerosol burden >35', effect: 'Rain -3; food -2; trust -2' },
-  { option: 'Aerosol burden >55', effect: 'Additional rain -5; food -4; trust -5; infrastructure -4; event risk rises' },
-  { option: 'Aerosol burden >75', effect: 'Additional rain -8; food -8; trust -8; infrastructure -8; event risk rises strongly' },
-  { option: 'Same core strategy 3 times', effect: 'Rain -7; food -5; trust -6; burden +6' },
-];
 
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value));
@@ -333,7 +310,7 @@ function earthStatus(indicators: Indicators): { label: string; detail: string; t
   if (indicators.temperature <= 0.9) {
     return {
       label: 'Overcooled Earth',
-      detail: 'Cooling became too aggressive; sunlight, rainfall and agriculture risks increase.',
+      detail: 'Cooling became too aggressive; sunlight, rainfall and agriculture side-effect pressure increases.',
       tone: 'from-blue-950 via-cyan-950 to-slate-950',
       ring: 'border-cyan-300 shadow-cyan-900/50',
       emoji: '❄️',
@@ -369,49 +346,52 @@ function differenceText(key: keyof Indicators, current: number, previous: number
   return { text: `${diff > 0 ? '+' : ''}${diff}%`, className: diff > 0 ? 'text-emerald-400' : 'text-red-400' };
 }
 
-function strategyExplanation(entry: StrategyEntry): string[] {
+function strategyExplanation(entry: StrategyEntry, knowledge: number): string[] {
   const notes: string[] = [];
+  if (knowledge < 25) {
+    return ['Scientific knowledge is still low. The council sees the visible indicator changes, but detailed cause-effect interpretation is locked. Use laboratory testing or monitoring to unlock research insights.'];
+  }
 
   if (entry.target === 'none') {
     notes.push('No SAI avoids direct aerosol side effects, but background greenhouse-gas warming continues. If this follows repeated SAI use, the game checks for termination shock.');
   } else if (entry.target === 'moderate') {
     notes.push('Moderate cooling stabilizes temperature near 1.5°C. It is safer than aggressive cooling, but still adds aerosol burden and hydrological side effects.');
   } else if (entry.target === 'aggressive') {
-    notes.push('Aggressive cooling strongly reduces heat stress, but the game now applies a food/sunlight penalty and stronger rainfall risk. This follows the agricultural literature showing that aerosols can reduce direct sunlight for crops.');
+    notes.push('Aggressive cooling strongly reduces heat stress, but the game now applies a food/sunlight penalty and stronger rainfall disruption. This follows the agricultural literature showing that aerosols can reduce direct sunlight for crops.');
   } else {
-    notes.push('Emergency cooling is a crisis option. It controls temperature fastest but strongly raises aerosol burden, overcooling risk, rainfall disruption and trust loss.');
+    notes.push('Emergency cooling is a crisis option. It controls temperature fastest but strongly raises aerosol burden, overcooling pressure, rainfall disruption and trust loss.');
   }
 
-  if (entry.season === 'autumn') {
+  if (knowledge >= 40 && entry.season === 'autumn') {
     notes.push('Autumn injection is treated as favourable for Arctic sea-ice recovery and less harmful for the Indian monsoon than spring in the seasonal-strategy paper.');
-  } else if (entry.season === 'spring') {
-    notes.push('Spring injection is treated as SO₂-efficient, but with stronger rainfall-trade-off risk in the simplified game model.');
-  } else if (entry.target !== 'none') {
+  } else if (knowledge >= 40 && entry.season === 'spring') {
+    notes.push('Spring injection is treated as SO₂-efficient, but with stronger rainfall trade-off in the simplified game model.');
+  } else if (knowledge >= 40 && entry.target !== 'none') {
     notes.push('Annual injection is the reference strategy: predictable, but not optimal for every region.');
   }
 
-  if (entry.location === 'polar') {
-    notes.push('Polar injection strongly supports Arctic ice, but it increases rainfall-inequality and governance risk because SAI effects are not purely local.');
-  } else if (entry.location === 'subtropical') {
+  if (knowledge >= 55 && entry.location === 'polar') {
+    notes.push('Polar injection strongly supports Arctic ice, but it increases rainfall redistribution and governance pressure because SAI effects are not purely local.');
+  } else if (knowledge >= 55 && entry.location === 'subtropical') {
     notes.push('Subtropical injection is a compromise between global spread and targeted polar cooling.');
-  } else if (entry.target !== 'none') {
+  } else if (knowledge >= 55 && entry.target !== 'none') {
     notes.push('Tropical injection spreads aerosols more globally, but polar regions can remain undercooled compared with the global mean.');
   }
 
-  if (entry.particle === 'sulfate') {
+  if (knowledge >= 70 && entry.particle === 'sulfate') {
     notes.push('Sulfate is the best-studied baseline. It has lower uncertainty than alternatives, but still increases aerosol burden and known chemistry/heating concerns.');
-  } else if (entry.particle === 'caco3') {
+  } else if (knowledge >= 70 && entry.particle === 'caco3') {
     notes.push('CaCO₃/calcite is the research-gap material: potentially useful, but acid uptake, particle ageing, lifetime and heterogeneous chemistry are only partly known.');
-  } else if (entry.particle === 'alumina') {
-    notes.push('Alumina represents a high-performance solid-particle option with strong ozone-chemistry uncertainty, so the game gives it higher technical cost and event risk.');
-  } else {
+  } else if (knowledge >= 70 && entry.particle === 'alumina') {
+    notes.push('Alumina represents a high-performance solid-particle option with strong ozone-chemistry uncertainty, so the game gives it higher technical cost and stronger uncertainty-event pressure.');
+  } else if (knowledge >= 70) {
     notes.push('The future engineered particle is intentionally uncertain. It is powerful only after enough research and dangerous if used too early.');
   }
 
   if (entry.research === 'lab') {
     notes.push('Laboratory testing raises knowledge because material choice is an aerosol-engineering problem: generation, sizing, coagulation, optical scattering, settling and surface chemistry.');
   } else if (entry.research === 'monitoring') {
-    notes.push('Monitoring raises trust, improves infrastructure and reduces random-event probability because regional and chemical side effects must be observed.');
+    notes.push('Monitoring raises trust, improves infrastructure and reduces random-event likelihood because regional and chemical side effects must be observed.');
   } else if (entry.research === 'adaptation') {
     notes.push('Adaptation and compensation reduce human damage from rainfall and food-security impacts, but they do not reduce aerosol burden as much as monitoring.');
   } else {
@@ -426,7 +406,7 @@ function finalOutcomeExplanation(indicators: Indicators): string {
     return 'The end state is a governance or human-systems failure. The game shows that temperature control is not sufficient if rainfall, food security, public legitimacy or operational stability collapses.';
   }
   if (indicators.aerosolBurden > 80) {
-    return 'The end state is technically unstable. Temperature may look controlled, but aerosol burden is too high, so side-effect pressure and random-event risk remain severe.';
+    return 'The end state is technically unstable. Temperature may look controlled, but aerosol burden is too high, so side-effect pressure and random-event likelihood remain severe.';
   }
   if (indicators.temperature > 2.3) {
     return 'The end state is too hot. The intervention was too weak or too late to prevent strong warming, which harms ice, food security and long-term stability.';
@@ -452,7 +432,7 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-950/60 px-3 py-1 text-sm text-blue-200">
-                <Globe2 size={16} /> Interactive SAI governance game · harder research version
+                <Globe2 size={16} /> Interactive SAI governance game
               </div>
               <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white">The SAI Governance Challenge</h1>
               <p className="mt-4 max-w-3xl text-slate-300 md:text-lg">
@@ -475,7 +455,7 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
               SAI means stratospheric aerosol injection. Aerosol particles or precursors are introduced into the stratosphere to scatter incoming sunlight and reduce surface warming. This can lower global temperature, but it does not remove greenhouse gases and it cannot perfectly restore the climate system.
             </p>
             <p className="mt-3 text-slate-300 leading-relaxed">
-              The harder version adds cumulative aerosol burden, infrastructure stability, material chemistry uncertainty, crop sunlight penalties and regional inequality events. These changes prevent one repeated strategy from becoming automatically perfect.
+              The game translates research findings into decision rules. Players choose a temperature target, season, injection location, particle material and support action. The visible result is the combined effect on temperature, ice, food, rainfall, trust, knowledge, aerosol burden and infrastructure.
             </p>
           </InfoCard>
 
@@ -485,7 +465,7 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
               Survive ten decades until 2130 without triggering collapse. A good result keeps temperature near the target, Arctic ice above danger level, food and rainfall stable, public trust alive, scientific knowledge high, aerosol burden controlled and infrastructure stable.
             </p>
             <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-100">
-              You now get only {POINTS_PER_DECADE} Governance Points each decade. Strong SAI, polar targeting, new materials and research cannot all be chosen at the same time.
+              Governance capacity is limited each decade. Strong intervention, polar targeting, alternative particles and support actions cannot always be combined, so each round forces a trade-off.
             </div>
           </InfoCard>
         </div>
@@ -510,18 +490,8 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           <p className="mt-4 text-slate-300 leading-relaxed">
             Sulfate is the known baseline. CaCO₃/calcite and alumina are solid-particle alternatives, but their lifetime, optical behaviour, surface chemistry, ozone effects and particle ageing are uncertain. The future engineered particle is locked because unknown particles should not be deployed without research.
           </p>
-          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-700">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-800 text-slate-200">
-                <tr><th className="p-3">Particle</th><th className="p-3">Cooling</th><th className="p-3">Lifetime</th><th className="p-3">Main game risk</th></tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 bg-slate-950/40">
-                <tr><td className="p-3">Sulfate</td><td className="p-3">Known</td><td className="p-3">Known</td><td className="p-3">Known chemistry / heating / deposition concerns</td></tr>
-                <tr><td className="p-3">CaCO₃ / calcite</td><td className="p-3">Partly known</td><td className="p-3">Partly known</td><td className="p-3">Acid uptake, ageing, heterogeneous chemistry</td></tr>
-                <tr><td className="p-3">Alumina</td><td className="p-3">Partly known</td><td className="p-3">Partly known</td><td className="p-3">Ozone chemistry uncertainty</td></tr>
-                <tr><td className="p-3">Future particle</td><td className="p-3">???</td><td className="p-3">???</td><td className="p-3">Unknown risk until research is high</td></tr>
-              </tbody>
-            </table>
+          <div className="mt-5 rounded-2xl border border-purple-500/30 bg-slate-950/50 p-4 text-sm text-slate-300">
+            The material comparison is deliberately incomplete at the beginning. Players unlock deeper interpretation by increasing scientific knowledge during the game.
           </div>
         </InfoCard>
 
@@ -621,11 +591,85 @@ function EarthVisual({ indicators }: { indicators: Indicators }) {
           </div>
         </div>
         <div className="rounded-2xl border border-slate-700 bg-slate-950/40 p-4 text-sm text-slate-300">
-          <div className="font-bold text-white">Harder version rule</div>
+          <div className="font-bold text-white">Stability rule</div>
           <div className="mt-1">A perfect temperature number can still fail if burden, infrastructure, rainfall or trust becomes unstable.</div>
         </div>
       </div>
     </div>
+  );
+}
+
+
+function nextInsightTarget(knowledge: number): string {
+  if (knowledge < 25) return '25%: temperature-target insight';
+  if (knowledge < 40) return '40%: seasonality insight';
+  if (knowledge < 55) return '55%: injection-location insight';
+  if (knowledge < 70) return '70%: material-uncertainty insight';
+  if (knowledge < 80) return '80%: future-particle readiness';
+  return 'all main insights unlocked';
+}
+
+function insightUnlocked(knowledge: number, threshold: number): boolean {
+  return knowledge >= threshold;
+}
+
+function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: number; futureUnlocked: boolean }) {
+  const items = [
+    {
+      threshold: 0,
+      title: 'Starting insight',
+      text: 'SAI can lower global temperature, but temperature alone is not enough for a stable outcome.',
+    },
+    {
+      threshold: 25,
+      title: 'Level 1 insight: cooling ambition',
+      text: 'Stronger cooling lowers heat pressure, but it also increases aerosol burden and can damage rainfall, agriculture and public acceptance.',
+    },
+    {
+      threshold: 40,
+      title: 'Level 2 insight: seasonality',
+      text: 'Changing the injection season shifts aerosol optical depth in time. This changes Arctic ice, Indian monsoon rainfall and Amazon dry-season rainfall differently.',
+    },
+    {
+      threshold: 55,
+      title: 'Level 3 insight: injection location',
+      text: 'Tropical/subtropical injection is more globally balanced. Polar injection helps ice more strongly, but it can disturb rainfall distribution outside the polar region.',
+    },
+    {
+      threshold: 70,
+      title: 'Level 4 insight: material uncertainty',
+      text: 'Sulfate is the studied baseline. CaCO₃/calcite and alumina are not automatically better; their lifetime, ageing, optical behaviour and surface chemistry still need research.',
+    },
+    {
+      threshold: 80,
+      title: 'Advanced insight: future particles',
+      text: futureUnlocked
+        ? 'Future engineered particles are now available, but they still need monitoring because model confidence is not the same as atmospheric proof.'
+        : 'Future engineered particles are still locked. The knowledge level must be high enough before the council can justify testing them.',
+    },
+  ];
+
+  return (
+    <InfoCard>
+      <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Brain className="text-purple-400" /> Research insight tracker</h2>
+      <div className="mb-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
+        Current knowledge: <b>{knowledge}%</b>. Next unlock: <b>{nextInsightTarget(knowledge)}</b>. Knowledge mainly comes from laboratory testing; monitoring adds smaller observational insight.
+      </div>
+      <div className="space-y-3 text-sm">
+        {items.map((item) => {
+          const unlocked = insightUnlocked(knowledge, item.threshold);
+          return (
+            <div key={item.title} className={`rounded-xl border p-3 ${unlocked ? 'border-purple-500/40 bg-slate-950/60 text-slate-200' : 'border-slate-800 bg-slate-950/30 text-slate-500'}`}>
+              <div className="flex items-center justify-between gap-3">
+                <b className={unlocked ? 'text-white' : 'text-slate-500'}>{item.title}</b>
+                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-xs">{item.threshold}%</span>
+              </div>
+              <div className="mt-2">{unlocked ? item.text : 'Locked: invest in research to understand this mechanism.'}</div>
+            </div>
+          );
+        })}
+      </div>
+    </InfoCard>
   );
 }
 
@@ -648,7 +692,7 @@ function App() {
   const [pointPenalty, setPointPenalty] = useState(0);
 
   const availablePoints = Math.max(3, POINTS_PER_DECADE - pointPenalty);
-  const futureUnlocked = indicators.knowledge >= 70 && year >= 2080;
+  const futureUnlocked = indicators.knowledge >= 80 && year >= 2090;
   const emergencyUnlocked = year >= 2070 || indicators.temperature >= 2.3;
   const currentCost = computeCost(target, particle, season, location, research);
   const pointsRemaining = availablePoints - currentCost;
@@ -733,25 +777,25 @@ function App() {
       }
 
       if (particle === 'sulfate') {
-        next.knowledge += 1;
+        next.knowledge += 0;
         next.trust -= 1;
         next.rain -= 2;
         next.aerosolBurden += 4;
       }
       if (particle === 'caco3') {
-        next.knowledge += 3;
+        next.knowledge += 1;
         next.trust -= indicators.knowledge < 50 ? 4 : 2;
         next.food += 1;
         next.aerosolBurden += 5;
       }
       if (particle === 'alumina') {
-        next.knowledge += 4;
+        next.knowledge += 2;
         next.trust -= indicators.knowledge < 65 ? 7 : 3;
         next.rain -= 1;
         next.aerosolBurden += 6;
       }
       if (particle === 'future') {
-        next.knowledge += 5;
+        next.knowledge += 2;
         next.trust -= indicators.knowledge > 85 ? 4 : 15;
         next.food += indicators.knowledge > 85 ? 6 : -12;
         next.rain += indicators.knowledge > 85 ? 3 : -10;
@@ -796,20 +840,20 @@ function App() {
     }
 
     if (research === 'lab') {
-      next.knowledge += 18;
-      next.trust += 4;
+      next.knowledge += 10;
+      next.trust += 3;
       next.aerosolBurden -= 2;
       next.infrastructure += 1;
-      reportText = 'Laboratory work improved knowledge about particles, but it used governance resources that could not be spent elsewhere.';
+      reportText = 'Laboratory work produced new particle knowledge, but it used governance resources that could not be spent elsewhere.';
     }
     if (research === 'monitoring') {
-      next.knowledge += 9;
-      next.trust += 10;
+      next.knowledge += 4;
+      next.trust += 9;
       next.rain += 2;
       next.food += 2;
       next.aerosolBurden -= 6;
       next.infrastructure += 6;
-      reportText = 'Monitoring improved transparency, infrastructure and early-warning capacity. This lowered uncertainty and event risk.';
+      reportText = 'Monitoring improved transparency, infrastructure and early-warning capacity. It adds less knowledge than laboratory work, but makes the system more trustworthy and observable.';
     }
     if (research === 'adaptation') {
       next.trust += 14;
@@ -843,7 +887,7 @@ function App() {
         return;
       }
       if ((particle === 'alumina' || particle === 'caco3' || particle === 'future') && eventRoll < 0.30) {
-        next.knowledge += 7;
+        next.knowledge += 4;
         next.trust -= 16;
         next.rain -= 6;
         next.food -= 6;
@@ -978,7 +1022,7 @@ function App() {
             <div className="space-y-4 text-slate-300 leading-relaxed">
               <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-emerald-100">{finalOutcomeExplanation(indicators)}</div>
               <p>Temperature is only one success criterion. The final state also depends on aerosol burden, infrastructure stability, rainfall, food security, public trust and knowledge.</p>
-              <p>You used polar injection {polarCount} time(s). Polar strategies strongly protect Arctic ice, but repeated use raises lower-latitude rainfall and regional inequality risk.</p>
+              <p>You used polar injection {polarCount} time(s). Polar strategies strongly protect Arctic ice, but repeated use raises lower-latitude rainfall and regional inequality pressure.</p>
               <p>You used CaCO₃/calcite {caco3Count} time(s), alumina {aluminaCount} time(s), and future engineered particles {futureCount} time(s). These choices represent the material research gap: alternative particles are promising only when uncertainty is actively reduced.</p>
               <p>You invested in laboratory or monitoring work {labCount} time(s). High knowledge and infrastructure make the strategy more defensible; low knowledge makes new materials and repeated high-burden SAI dangerous.</p>
             </div>
@@ -1050,7 +1094,7 @@ function App() {
             <InfoCard>
               <h3 className="mb-3 mt-2 text-xl font-black text-white">Why this happened</h3>
               <ul className="space-y-2 text-sm text-slate-300">
-                {strategyExplanation(report.choices).map((note) => <li key={note}>• {note}</li>)}
+                {strategyExplanation(report.choices, report.current.knowledge).map((note) => <li key={note}>• {note}</li>)}
               </ul>
             </InfoCard>
           </div>
@@ -1064,8 +1108,8 @@ function App() {
             <p className="text-sm text-slate-400">Planning decade: {year} to {year + 10}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><b>Points:</b> {availablePoints}</div>
-            <div className={`rounded-xl border px-3 py-2 ${pointsRemaining < 0 ? 'border-red-700 bg-red-950/40 text-red-200' : 'border-slate-700 bg-slate-950'}`}><b>Cost:</b> {currentCost} · <b>Remaining:</b> {pointsRemaining}</div>
+            <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><b>Governance capacity:</b> {availablePoints}</div>
+            <div className={`rounded-xl border px-3 py-2 ${pointsRemaining < 0 ? 'border-red-700 bg-red-950/40 text-red-200' : 'border-slate-700 bg-slate-950'}`}><b>Selected actions:</b> {currentCost} · <b>Capacity left:</b> {pointsRemaining}</div>
             <button onClick={resetGame} className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 hover:border-slate-500"><RefreshCcw size={16} /></button>
           </div>
         </div>
@@ -1083,8 +1127,8 @@ function App() {
                   <div className="space-y-2">
                     <ChoiceCard selected={target === 'none'} title="No SAI / pause" subtitle="No aerosol side effects, but warming continues. Dangerous after previous SAI." cost={0} tone="amber" onClick={() => setTarget('none')} />
                     <ChoiceCard selected={target === 'moderate'} title="Stabilize near 1.5°C" subtitle="Balanced intervention. Still adds aerosol burden." cost={targetMeta.moderate.cost + (target === 'moderate' ? particleMeta[particle].cost : 1)} tone="blue" onClick={() => setTarget('moderate')} />
-                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle="Reduces heat stress, but rainfall/sunlight risk rises." cost={targetMeta.aggressive.cost + particleMeta[particle].cost} tone="emerald" onClick={() => setTarget('aggressive')} />
-                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? 'Extreme action. High chance of overcooling and backlash.' : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost + particleMeta[particle].cost} tone="red" onClick={() => setTarget('emergency')} />
+                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle="Reduces heat stress, but rainfall disruption and sunlight pressure rise." cost={targetMeta.aggressive.cost + particleMeta[particle].cost} tone="emerald" onClick={() => setTarget('aggressive')} />
+                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? 'Extreme action. High likelihood of overcooling and backlash.' : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost + particleMeta[particle].cost} tone="red" onClick={() => setTarget('emergency')} />
                   </div>
                 </section>
 
@@ -1102,18 +1146,18 @@ function App() {
                   <div className="space-y-2">
                     <ChoiceCard selected={location === 'tropical'} title="Tropical / equatorial" subtitle="Global spread, weaker polar rescue." cost={target === 'none' ? 0 : 0} onClick={() => setLocation('tropical')} />
                     <ChoiceCard selected={location === 'subtropical'} title="Subtropical" subtitle="Compromise: more control, more trade-offs." cost={target === 'none' ? 0 : 1} tone="blue" onClick={() => setLocation('subtropical')} />
-                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle="Strong ice rescue, but rainfall inequality risk." cost={target === 'none' ? 0 : 2} tone="red" onClick={() => setLocation('polar')} />
+                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle="Strong ice rescue, but rainfall redistribution pressure." cost={target === 'none' ? 0 : 2} tone="red" onClick={() => setLocation('polar')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Atom size={16} /> Level 4: Particle material / research gap</h3>
-                  <div className="mb-3 rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 text-xs text-purple-100">The new version adds alumina and makes alternative materials risky unless knowledge is built first.</div>
+                  <div className="mb-3 rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 text-xs text-purple-100">Alumina and other alternative materials remain uncertain until knowledge is built first.</div>
                   <div className="space-y-2">
-                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle="Known baseline. Lower uncertainty, known risks." cost={target === 'none' ? 0 : particleMeta.sulfate.cost} tone="blue" onClick={() => setParticle('sulfate')} />
+                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle="Known baseline. Lower uncertainty; studied side effects." cost={target === 'none' ? 0 : particleMeta.sulfate.cost} tone="blue" onClick={() => setParticle('sulfate')} />
                     <ChoiceCard selected={particle === 'caco3'} title="CaCO₃ / calcite particles" subtitle="Solid alternative. Partly known, chemistry uncertain." cost={target === 'none' ? 0 : particleMeta.caco3.cost} tone="purple" onClick={() => setParticle('caco3')} />
                     <ChoiceCard selected={particle === 'alumina'} title="Alumina particles" subtitle="Potential solid particle option, but ozone uncertainty is high." cost={target === 'none' ? 0 : particleMeta.alumina.cost} tone="amber" onClick={() => setParticle('alumina')} />
-                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={futureUnlocked ? 'Unlocked by research. High reward, high uncertainty.' : 'Locked: needs ≥70% knowledge and year ≥2080.'} cost={target === 'none' ? 0 : particleMeta.future.cost} tone="red" onClick={() => setParticle('future')} />
+                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={futureUnlocked ? 'Unlocked by research. Powerful, but only after research.' : 'Locked: needs ≥80% knowledge and year ≥2090.'} cost={target === 'none' ? 0 : particleMeta.future.cost} tone="red" onClick={() => setParticle('future')} />
                   </div>
                 </section>
 
@@ -1122,12 +1166,12 @@ function App() {
                   <div className="space-y-2">
                     <ChoiceCard selected={research === 'none'} title="No support action" subtitle="Save points, but uncertainty remains." cost={0} onClick={() => setResearch('none')} />
                     <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing" subtitle="Research material performance and chemistry." cost={2} tone="purple" onClick={() => setResearch('lab')} />
-                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data" subtitle="Lower event risk, improve trust and infrastructure." cost={2} tone="emerald" onClick={() => setResearch('monitoring')} />
+                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data" subtitle="Lower event likelihood, improve trust and infrastructure." cost={2} tone="emerald" onClick={() => setResearch('monitoring')} />
                     <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation" subtitle="Protect affected regions and food systems." cost={2} tone="amber" onClick={() => setResearch('adaptation')} />
                   </div>
                 </section>
               </div>
-              {pointsRemaining < 0 && <div className="mt-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">Not enough Governance Points. Choose cheaper options.</div>}
+              {pointsRemaining < 0 && <div className="mt-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">The selected package exceeds the available governance capacity. Choose a less demanding strategy.</div>}
               {lastTwoSameCore && <div className="mt-5 rounded-2xl border border-amber-700 bg-amber-950/30 p-4 text-sm text-amber-100">Warning: using the same core strategy again will trigger diminishing returns.</div>}
               <button onClick={processDecade} disabled={pointsRemaining < 0} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400">
                 <Play size={18} /> Complete decade
@@ -1136,23 +1180,7 @@ function App() {
           </div>
 
           <div className="space-y-6 lg:col-span-7">
-            <InfoCard>
-              <h2 className="mb-4 text-xl font-black text-white">Research gap tracker</h2>
-              <div className="overflow-hidden rounded-2xl border border-slate-700">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-800 text-slate-300"><tr><th className="p-3">Particle</th><th className="p-3">Cooling</th><th className="p-3">Lifetime</th><th className="p-3">Risk</th></tr></thead>
-                  <tbody className="divide-y divide-slate-800">
-                    <tr><td className="p-3">Sulfate</td><td className="p-3">Known</td><td className="p-3">Known</td><td className="p-3">Known but not harmless</td></tr>
-                    <tr><td className="p-3">CaCO₃ / calcite</td><td className="p-3">Partly known</td><td className="p-3">Partly known</td><td className="p-3">Acid uptake / ageing uncertainty</td></tr>
-                    <tr><td className="p-3">Alumina</td><td className="p-3">Partly known</td><td className="p-3">Partly known</td><td className="p-3">Ozone chemistry uncertainty</td></tr>
-                    <tr><td className="p-3">Future particle</td><td className="p-3">{futureUnlocked ? 'Research unlocked' : '???'}</td><td className="p-3">{futureUnlocked ? 'Partly modeled' : '???'}</td><td className="p-3">{futureUnlocked ? 'Still uncertain' : '???'}</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
-                Current knowledge: {indicators.knowledge}%. Future particles unlock at 70% knowledge after 2080. The game now makes alternative particles useful only if the player also invests in research and monitoring.
-              </div>
-            </InfoCard>
+            <ResearchInsightTracker knowledge={indicators.knowledge} futureUnlocked={futureUnlocked} />
 
             <InfoCard>
               <h2 className="mb-4 text-xl font-black text-white">Temperature trajectory</h2>
@@ -1211,7 +1239,7 @@ function App() {
             </InfoCard>
 
             <InfoCard>
-              <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><ShieldAlert className="text-red-400" /> Harder outcome rules</h2>
+              <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><ShieldAlert className="text-red-400" /> Stability and uncertainty rules</h2>
               <div className="grid gap-3 md:grid-cols-2 text-sm text-slate-300">
                 <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3"><b>Termination shock:</b> stopping or interrupting SAI after repeated deployment can end the game.</div>
                 <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3"><b>Aerosol burden:</b> high cumulative burden causes rainfall, food, trust and infrastructure penalties.</div>
@@ -1219,18 +1247,6 @@ function App() {
                 <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3"><b>Material chemistry:</b> CaCO₃, alumina and future particles can trigger surprise side effects if knowledge is too low.</div>
                 <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3"><b>Crop sunlight penalty:</b> aggressive aerosol loading can lower food security even if heat stress is reduced.</div>
                 <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3"><b>Regional inequality:</b> polar/asymmetric choices can trigger concentrated drought and trust collapse.</div>
-              </div>
-            </InfoCard>
-
-            <InfoCard>
-              <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Info className="text-blue-400" /> Exact effect reference</h2>
-              <div className="max-h-80 overflow-y-auto rounded-2xl border border-slate-700">
-                <table className="w-full text-left text-xs md:text-sm">
-                  <thead className="sticky top-0 bg-slate-800 text-slate-300"><tr><th className="p-3">Rule</th><th className="p-3">Effect in game</th></tr></thead>
-                  <tbody className="divide-y divide-slate-800 bg-slate-950/30">
-                    {exactRules.map((rule) => <tr key={rule.option}><td className="p-3 font-semibold text-white">{rule.option}</td><td className="p-3 text-slate-300">{rule.effect}</td></tr>)}
-                  </tbody>
-                </table>
               </div>
             </InfoCard>
           </div>
