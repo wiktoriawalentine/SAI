@@ -82,7 +82,7 @@ type Report = {
 
 const START_YEAR = 2030;
 const END_YEAR = 2130;
-const POINTS_PER_DECADE = 6;
+const POINTS_PER_DECADE = 7;
 
 const INITIAL_STATE: Indicators = {
   temperature: 1.6,
@@ -90,7 +90,7 @@ const INITIAL_STATE: Indicators = {
   food: 80,
   rain: 85,
   trust: 65,
-  knowledge: 10,
+  knowledge: 8,
   aerosolBurden: 0,
   infrastructure: 90,
 };
@@ -567,7 +567,7 @@ function ChoiceCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className={`font-bold ${titleClass}`}>{title}</div>
-          <div className="mt-1 text-xs text-slate-400">{subtitle}</div>
+          <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-400">{subtitle}</div>
         </div>
         <div className="shrink-0 rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-300">{cost} GP</div>
       </div>
@@ -653,7 +653,7 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
     <InfoCard>
       <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Brain className="text-purple-400" /> Research insight tracker</h2>
       <div className="mb-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
-        Current knowledge: <b>{knowledge}%</b>. Next unlock: <b>{nextInsightTarget(knowledge)}</b>. Knowledge mainly comes from laboratory testing; monitoring adds smaller observational insight.
+        Current knowledge: <b>{knowledge}%</b>. Next unlock: <b>{nextInsightTarget(knowledge)}</b>. Higher knowledge reveals the numerical effects under the choice cards, so research makes the game easier to interpret.
       </div>
       <div className="space-y-3 text-sm">
         {items.map((item) => {
@@ -671,6 +671,97 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
       </div>
     </InfoCard>
   );
+}
+
+
+function lockedEffectText(threshold: number, basic: string, exact: string, knowledge: number): string {
+  if (knowledge >= threshold) return exact;
+  return `${basic}\nExact effect hidden until ${threshold}% knowledge.`;
+}
+
+function targetSubtitle(choice: TargetChoice, knowledge: number): string {
+  const basic: Record<TargetChoice, string> = {
+    none: 'No aerosol side effects, but warming continues. Dangerous after previous SAI.',
+    moderate: 'Balanced intervention. Still adds aerosol burden.',
+    aggressive: 'Reduces heat stress, but rainfall disruption and sunlight pressure rise.',
+    emergency: 'Extreme action. High overcooling and public backlash likelihood.',
+  };
+  const exact: Record<TargetChoice, string> = {
+    none: 'Temp follows warming; ice -10; food -6; rain -4; trust +2; burden -12; infrastructure +1.',
+    moderate: 'Temp → +1.5°C; food -1; rain -3; trust +1; burden +7; infrastructure -2.',
+    aggressive: 'Temp → +1.0°C; food +2 and -5 sunlight; rain -11; trust -6; burden +15; infrastructure -5.',
+    emergency: 'Temp → +0.8°C; food -9 and -12 sunlight/overcooling; rain -20; trust -12; burden +22; infrastructure -8.',
+  };
+  return lockedEffectText(25, basic[choice], exact[choice], knowledge);
+}
+
+function seasonSubtitle(choice: SeasonChoice, knowledge: number, paused: boolean): string {
+  if (paused) return 'No injection this decade, so season has no direct effect.';
+  const basic: Record<SeasonChoice, string> = {
+    annual: 'Reference strategy. Stable, but not regionally optimal.',
+    spring: 'Efficient cooling, but stronger rainfall trade-off.',
+    autumn: 'Better ice and India-rainfall trade-off.',
+  };
+  const exact: Record<SeasonChoice, string> = {
+    annual: 'Ice +2; burden +2.',
+    spring: 'Temp -0.05°C; rain -9; ice -4; trust -3; burden -1.',
+    autumn: 'Ice +12; rain +1; trust +1; burden -1.',
+  };
+  return lockedEffectText(40, basic[choice], exact[choice], knowledge);
+}
+
+function locationSubtitle(choice: LocationChoice, knowledge: number, paused: boolean): string {
+  if (paused) return 'No injection this decade, so location has no direct effect.';
+  const basic: Record<LocationChoice, string> = {
+    tropical: 'Global spread, weaker polar rescue.',
+    subtropical: 'Compromise: more control, more trade-offs.',
+    polar: 'Strong ice rescue, but rainfall redistribution pressure.',
+  };
+  const exact: Record<LocationChoice, string> = {
+    tropical: 'Ice -4; rain -2.',
+    subtropical: 'Temp -0.05°C; ice +4; rain -4; food -1; burden +1.',
+    polar: 'Ice +18; rain -18; food -10; trust -8; burden +4; infrastructure -3.',
+  };
+  return lockedEffectText(55, basic[choice], exact[choice], knowledge);
+}
+
+function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boolean, futureUnlocked: boolean): string {
+  if (paused) return 'No injection this decade, so material has no direct effect.';
+  if (choice === 'future' && !futureUnlocked) return 'Locked: needs ≥80% knowledge and year ≥2090.';
+  const basic: Record<ParticleChoice, string> = {
+    sulfate: 'Known baseline. Lower uncertainty; studied side effects.',
+    caco3: 'Solid alternative. Partly known, chemistry uncertain.',
+    alumina: 'Potential solid particle option, but ozone uncertainty is high.',
+    future: 'Unlocked by research. Powerful, but only after research.',
+  };
+  const caco3Trust = knowledge < 50 ? '-4' : '-2';
+  const aluminaTrust = knowledge < 65 ? '-7' : '-3';
+  const futureOutcome = knowledge > 85
+    ? 'Temp -0.10°C; knowledge +1; food +6; rain +3; trust -4; burden +5.'
+    : 'Temp -0.10°C; knowledge +1; food -12; rain -10; trust -15; burden +9.';
+  const exact: Record<ParticleChoice, string> = {
+    sulfate: 'Rain -2; trust -1; burden +4.',
+    caco3: `Temp -0.05°C; knowledge +0; food +1; trust ${caco3Trust}; burden +5.`,
+    alumina: `Temp -0.05°C; knowledge +1; rain -1; trust ${aluminaTrust}; burden +6.`,
+    future: futureOutcome,
+  };
+  return lockedEffectText(70, basic[choice], exact[choice], knowledge);
+}
+
+function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
+  const basic: Record<ResearchChoice, string> = {
+    none: 'Save points, but uncertainty remains.',
+    lab: 'Research material performance and chemistry.',
+    monitoring: 'Improve observation, trust and infrastructure.',
+    adaptation: 'Protect affected regions and food systems.',
+  };
+  const exact: Record<ResearchChoice, string> = {
+    none: 'No direct effect. Saves capacity this decade.',
+    lab: 'Knowledge +9; trust +3; burden -2; infrastructure +1.',
+    monitoring: 'Knowledge +3; trust +9; rain +2; food +2; burden -6; infrastructure +6; event likelihood lower.',
+    adaptation: 'Trust +14; food +8; rain +4; infrastructure +3.',
+  };
+  return lockedEffectText(25, basic[choice], exact[choice], knowledge);
 }
 
 function App() {
@@ -783,19 +874,19 @@ function App() {
         next.aerosolBurden += 4;
       }
       if (particle === 'caco3') {
-        next.knowledge += 1;
+        next.knowledge += 0;
         next.trust -= indicators.knowledge < 50 ? 4 : 2;
         next.food += 1;
         next.aerosolBurden += 5;
       }
       if (particle === 'alumina') {
-        next.knowledge += 2;
+        next.knowledge += 1;
         next.trust -= indicators.knowledge < 65 ? 7 : 3;
         next.rain -= 1;
         next.aerosolBurden += 6;
       }
       if (particle === 'future') {
-        next.knowledge += 2;
+        next.knowledge += 1;
         next.trust -= indicators.knowledge > 85 ? 4 : 15;
         next.food += indicators.knowledge > 85 ? 6 : -12;
         next.rain += indicators.knowledge > 85 ? 3 : -10;
@@ -840,14 +931,14 @@ function App() {
     }
 
     if (research === 'lab') {
-      next.knowledge += 10;
+      next.knowledge += 9;
       next.trust += 3;
       next.aerosolBurden -= 2;
       next.infrastructure += 1;
       reportText = 'Laboratory work produced new particle knowledge, but it used governance resources that could not be spent elsewhere.';
     }
     if (research === 'monitoring') {
-      next.knowledge += 4;
+      next.knowledge += 3;
       next.trust += 9;
       next.rain += 2;
       next.food += 2;
@@ -1028,26 +1119,21 @@ function App() {
             </div>
           </InfoCard>
           <InfoCard>
-            <h2 className="mb-4 text-2xl font-black text-white">Strategy log</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left text-sm">
-                <thead className="text-slate-400"><tr><th className="p-2">Decade</th><th className="p-2">Particle</th><th className="p-2">Target</th><th className="p-2">Season</th><th className="p-2">Location</th><th className="p-2">Support</th><th className="p-2">Cost</th><th className="p-2">Event</th></tr></thead>
-                <tbody className="divide-y divide-slate-800">
-                  {strategyLog.map((entry, idx) => (
-                    <tr key={`${entry.year}-${idx}`}>
-                      <td className="p-2">{entry.year}-{entry.year + 10}</td>
-                      <td className="p-2">{particleMeta[entry.particle].label}</td>
-                      <td className="p-2">{targetMeta[entry.target].label}</td>
-                      <td className="p-2">{seasonMeta[entry.season].label}</td>
-                      <td className="p-2">{locationMeta[entry.location].label}</td>
-                      <td className="p-2">{researchMeta[entry.research].label}</td>
-                      <td className="p-2">{entry.cost}</td>
-                      <td className="p-2 text-slate-400">{entry.event || 'none'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <h2 className="mb-4 text-2xl font-black text-white">Strategy memory</h2>
+            {indicators.knowledge >= 55 ? (
+              <div className="space-y-3 text-sm text-slate-300">
+                {strategyLog.map((entry, idx) => (
+                  <div key={`${entry.year}-${idx}`} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                    <b className="text-white">{entry.year}-{entry.year + 10}:</b> {targetMeta[entry.target].label}, {seasonMeta[entry.season].label}, {locationMeta[entry.location].label}, {particleMeta[entry.particle].label}, {researchMeta[entry.research].label}.
+                    {entry.event && <div className="mt-1 text-amber-200">{entry.event}</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
+                Detailed strategy memory is locked until 55% knowledge. The final evaluation gives only a qualitative interpretation until enough research insight is available.
+              </div>
+            )}
           </InfoCard>
           <button onClick={resetGame} className="mx-auto flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-bold text-white hover:bg-blue-500"><RefreshCcw size={18} /> Restart</button>
         </div>
@@ -1125,28 +1211,28 @@ function App() {
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><ThermometerSnowflake size={16} /> Level 1: Temperature target</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={target === 'none'} title="No SAI / pause" subtitle="No aerosol side effects, but warming continues. Dangerous after previous SAI." cost={0} tone="amber" onClick={() => setTarget('none')} />
-                    <ChoiceCard selected={target === 'moderate'} title="Stabilize near 1.5°C" subtitle="Balanced intervention. Still adds aerosol burden." cost={targetMeta.moderate.cost + (target === 'moderate' ? particleMeta[particle].cost : 1)} tone="blue" onClick={() => setTarget('moderate')} />
-                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle="Reduces heat stress, but rainfall disruption and sunlight pressure rise." cost={targetMeta.aggressive.cost + particleMeta[particle].cost} tone="emerald" onClick={() => setTarget('aggressive')} />
-                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? 'Extreme action. High likelihood of overcooling and backlash.' : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost + particleMeta[particle].cost} tone="red" onClick={() => setTarget('emergency')} />
+                    <ChoiceCard selected={target === 'none'} title="No SAI / pause" subtitle={targetSubtitle('none', indicators.knowledge)} cost={0} tone="amber" onClick={() => setTarget('none')} />
+                    <ChoiceCard selected={target === 'moderate'} title="Stabilize near 1.5°C" subtitle={targetSubtitle('moderate', indicators.knowledge)} cost={targetMeta.moderate.cost + (target === 'moderate' ? particleMeta[particle].cost : 1)} tone="blue" onClick={() => setTarget('moderate')} />
+                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle={targetSubtitle('aggressive', indicators.knowledge)} cost={targetMeta.aggressive.cost + particleMeta[particle].cost} tone="emerald" onClick={() => setTarget('aggressive')} />
+                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? targetSubtitle('emergency', indicators.knowledge) : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost + particleMeta[particle].cost} tone="red" onClick={() => setTarget('emergency')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Activity size={16} /> Level 2: Seasonality</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={season === 'annual'} title="Annual injection" subtitle="Reference strategy. Stable, but not regionally optimal." cost={target === 'none' ? 0 : 0} onClick={() => setSeason('annual')} />
-                    <ChoiceCard selected={season === 'spring'} title="Spring injection" subtitle="Efficient cooling, but stronger rainfall trade-off." cost={target === 'none' ? 0 : 1} tone="amber" onClick={() => setSeason('spring')} />
-                    <ChoiceCard selected={season === 'autumn'} title="Autumn injection" subtitle="Better ice and India-rainfall trade-off." cost={target === 'none' ? 0 : 1} tone="emerald" onClick={() => setSeason('autumn')} />
+                    <ChoiceCard selected={season === 'annual'} title="Annual injection" subtitle={seasonSubtitle('annual', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 0} onClick={() => setSeason('annual')} />
+                    <ChoiceCard selected={season === 'spring'} title="Spring injection" subtitle={seasonSubtitle('spring', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 1} tone="amber" onClick={() => setSeason('spring')} />
+                    <ChoiceCard selected={season === 'autumn'} title="Autumn injection" subtitle={seasonSubtitle('autumn', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 1} tone="emerald" onClick={() => setSeason('autumn')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Globe2 size={16} /> Level 3: Injection location</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={location === 'tropical'} title="Tropical / equatorial" subtitle="Global spread, weaker polar rescue." cost={target === 'none' ? 0 : 0} onClick={() => setLocation('tropical')} />
-                    <ChoiceCard selected={location === 'subtropical'} title="Subtropical" subtitle="Compromise: more control, more trade-offs." cost={target === 'none' ? 0 : 1} tone="blue" onClick={() => setLocation('subtropical')} />
-                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle="Strong ice rescue, but rainfall redistribution pressure." cost={target === 'none' ? 0 : 2} tone="red" onClick={() => setLocation('polar')} />
+                    <ChoiceCard selected={location === 'tropical'} title="Tropical / equatorial" subtitle={locationSubtitle('tropical', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 0} onClick={() => setLocation('tropical')} />
+                    <ChoiceCard selected={location === 'subtropical'} title="Subtropical" subtitle={locationSubtitle('subtropical', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 1} tone="blue" onClick={() => setLocation('subtropical')} />
+                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle={locationSubtitle('polar', indicators.knowledge, target === 'none')} cost={target === 'none' ? 0 : 2} tone="red" onClick={() => setLocation('polar')} />
                   </div>
                 </section>
 
@@ -1154,20 +1240,20 @@ function App() {
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Atom size={16} /> Level 4: Particle material / research gap</h3>
                   <div className="mb-3 rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 text-xs text-purple-100">Alumina and other alternative materials remain uncertain until knowledge is built first.</div>
                   <div className="space-y-2">
-                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle="Known baseline. Lower uncertainty; studied side effects." cost={target === 'none' ? 0 : particleMeta.sulfate.cost} tone="blue" onClick={() => setParticle('sulfate')} />
-                    <ChoiceCard selected={particle === 'caco3'} title="CaCO₃ / calcite particles" subtitle="Solid alternative. Partly known, chemistry uncertain." cost={target === 'none' ? 0 : particleMeta.caco3.cost} tone="purple" onClick={() => setParticle('caco3')} />
-                    <ChoiceCard selected={particle === 'alumina'} title="Alumina particles" subtitle="Potential solid particle option, but ozone uncertainty is high." cost={target === 'none' ? 0 : particleMeta.alumina.cost} tone="amber" onClick={() => setParticle('alumina')} />
-                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={futureUnlocked ? 'Unlocked by research. Powerful, but only after research.' : 'Locked: needs ≥80% knowledge and year ≥2090.'} cost={target === 'none' ? 0 : particleMeta.future.cost} tone="red" onClick={() => setParticle('future')} />
+                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle={materialSubtitle('sulfate', indicators.knowledge, target === 'none', futureUnlocked)} cost={target === 'none' ? 0 : particleMeta.sulfate.cost} tone="blue" onClick={() => setParticle('sulfate')} />
+                    <ChoiceCard selected={particle === 'caco3'} title="CaCO₃ / calcite particles" subtitle={materialSubtitle('caco3', indicators.knowledge, target === 'none', futureUnlocked)} cost={target === 'none' ? 0 : particleMeta.caco3.cost} tone="purple" onClick={() => setParticle('caco3')} />
+                    <ChoiceCard selected={particle === 'alumina'} title="Alumina particles" subtitle={materialSubtitle('alumina', indicators.knowledge, target === 'none', futureUnlocked)} cost={target === 'none' ? 0 : particleMeta.alumina.cost} tone="amber" onClick={() => setParticle('alumina')} />
+                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={materialSubtitle('future', indicators.knowledge, target === 'none', futureUnlocked)} cost={target === 'none' ? 0 : particleMeta.future.cost} tone="red" onClick={() => setParticle('future')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Microscope size={16} /> Optional support action</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={research === 'none'} title="No support action" subtitle="Save points, but uncertainty remains." cost={0} onClick={() => setResearch('none')} />
-                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing" subtitle="Research material performance and chemistry." cost={2} tone="purple" onClick={() => setResearch('lab')} />
-                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data" subtitle="Lower event likelihood, improve trust and infrastructure." cost={2} tone="emerald" onClick={() => setResearch('monitoring')} />
-                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation" subtitle="Protect affected regions and food systems." cost={2} tone="amber" onClick={() => setResearch('adaptation')} />
+                    <ChoiceCard selected={research === 'none'} title="No support action" subtitle={supportSubtitle('none', indicators.knowledge)} cost={0} onClick={() => setResearch('none')} />
+                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing" subtitle={supportSubtitle('lab', indicators.knowledge)} cost={2} tone="purple" onClick={() => setResearch('lab')} />
+                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data" subtitle={supportSubtitle('monitoring', indicators.knowledge)} cost={2} tone="emerald" onClick={() => setResearch('monitoring')} />
+                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation" subtitle={supportSubtitle('adaptation', indicators.knowledge)} cost={2} tone="amber" onClick={() => setResearch('adaptation')} />
                   </div>
                 </section>
               </div>
