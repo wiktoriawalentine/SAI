@@ -74,6 +74,7 @@ type Report = {
   title: string;
   text: string;
   event: string;
+  eventType?: 'chemistry' | 'drought' | 'ecosystem' | 'none';
   previous: Indicators;
   current: Indicators;
   cost: number;
@@ -586,6 +587,54 @@ function ChoiceCard({
   );
 }
 
+// AI-STYLE ILLUSTRATED EVENT BANNER COMPONENT
+function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'drought' | 'ecosystem' | 'none' }) {
+  if (!eventType || eventType === 'none') return null;
+
+  return (
+    <div className="relative my-4 overflow-hidden rounded-2xl border border-amber-500/50 bg-slate-950/90 p-4 shadow-2xl">
+      <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="w-full md:w-48 h-28 shrink-0 rounded-xl bg-slate-900 border border-slate-800 overflow-hidden relative flex items-center justify-center">
+          {eventType === 'chemistry' && (
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-950 flex items-center justify-center p-2">
+              <FlaskConical className="w-12 h-12 text-purple-400 animate-pulse" />
+              <div className="absolute inset-0 bg-[radial-gradient(#c084fc_1px,transparent_1px)] [background-size:12px_12px] opacity-40" />
+            </div>
+          )}
+          {eventType === 'drought' && (
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-950 via-slate-900 to-orange-950 flex items-center justify-center p-2">
+              <CloudRain className="w-12 h-12 text-amber-500 animate-bounce" />
+              <div className="absolute inset-0 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:14px_14px] opacity-30" />
+            </div>
+          )}
+          {eventType === 'ecosystem' && (
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 flex items-center justify-center p-2">
+              <ShieldAlert className="w-12 h-12 text-emerald-400 animate-pulse" />
+              <div className="absolute inset-0 bg-[radial-gradient(#34d399_1px,transparent_1px)] [background-size:12px_12px] opacity-30" />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-1">
+            <AlertTriangle className="w-3.5 h-3.5" /> Planetary Hazard Triggered
+          </div>
+          <h4 className="text-base font-black text-white">
+            {eventType === 'chemistry' && 'Stratospheric Microphysical Anomaly'}
+            {eventType === 'drought' && 'Monsoon Shift & Drought Pressure'}
+            {eventType === 'ecosystem' && 'Public Health & Ecosystem Scrutiny'}
+          </h4>
+          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+            {eventType === 'chemistry' && 'Laboratory reaction assumptions faced unforeseen chlorine chemistry in the stratosphere (Vattioni et al. 2023).'}
+            {eventType === 'drought' && 'Targeting polar latitudes caused a lower-latitude shift in precipitation cycles (Duffey et al. 2023).'}
+            {eventType === 'ecosystem' && 'Localized crop and regional health reports created public scrutiny and trust fluctuations (Tracy et al. 2022).'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 {/* --- DYNAMIC VISUAL ENVIRONMENT & ATMOSPHERIC CANVAS --- */}
 function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indicators; target: TargetChoice; particle: ParticleChoice }) {
   const status = earthStatus(indicators);
@@ -699,7 +748,6 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
         {/* Dynamic Plant SVG Canvas Graphic */}
         <div className="w-full md:w-64 h-16 rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden relative flex items-end justify-around px-3 pb-1">
           {foodPercent >= 70 ? (
-            /* Healthy Green Swaying Wheat Plants */
             <svg className="w-full h-12 text-emerald-400" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10 30 Q 12 15 15 0 M 15 10 Q 8 5 5 2 M 15 15 Q 22 10 25 8" />
               <path d="M35 30 Q 37 12 40 0 M 40 10 Q 33 5 30 2 M 40 15 Q 47 10 50 8" />
@@ -707,14 +755,12 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
               <path d="M88 30 Q 90 14 92 0 M 92 10 Q 85 5 82 2 M 92 15 Q 97 10 100 8" />
             </svg>
           ) : foodPercent >= 40 ? (
-            /* Yellowing Wilting Wheat Plants */
             <svg className="w-full h-10 text-amber-400" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10 30 Q 18 20 22 10 M 22 18 Q 15 14 12 10" />
               <path d="M35 30 Q 42 18 45 8 M 45 16 Q 38 12 35 8" />
               <path d="M65 30 Q 72 20 75 10 M 75 18 Q 68 14 65 10" />
             </svg>
           ) : (
-            /* Scorched Parched Ground & Brown Dry Stalks */
             <svg className="w-full h-7 text-red-500/80" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M10 30 Q 20 28 25 22 M 35 30 Q 40 28 42 24 M 65 30 Q 70 29 72 25 M 85 30 Q 88 28 90 23" />
               <line x1="0" y1="29" x2="100" y2="29" stroke="#7f1d1d" strokeWidth="2" />
@@ -823,9 +869,9 @@ export function App() {
     const previous = indicators;
     let next: Indicators = { ...indicators };
     let event = '';
-    let reportTitle = 'Decade Completed';
-    let reportText = 'The climate system responded to your choices with balanced regional impacts.';
-    const burdenNotes: string[] = [];
+    let reportTitle = 'Decade Overview';
+    let reportText = 'The climate system responded to your governance decisions.';
+    let eventType: 'chemistry' | 'drought' | 'ecosystem' | 'none' = 'none';
 
     if (target === 'none') {
       next.temperature = withoutSAI;
@@ -903,7 +949,7 @@ export function App() {
       next.rain += 6;
     }
 
-    burdenNotes.push(...applyBurdenPressure(next));
+    applyBurdenPressure(next);
 
     let eventChance = calcEventChance(target, particle, location, research, next);
     if (Math.random() < eventChance) {
@@ -913,19 +959,22 @@ export function App() {
         next.trust -= 8;
         next.rain -= 4;
         event = 'Material chemistry surprise: laboratory assumptions faced stratospheric chemistry uncertainties. Knowledge increased, but public trust dipped slightly (Vattioni et al. 2023).';
-        reportTitle = 'Event: Material Chemistry Uncertainty';
+        reportTitle = 'Decade Report: Material Surprises';
+        eventType = 'chemistry';
       } else if (location === 'polar' && eventRoll < 0.70) {
         next.rain -= 6;
         next.food -= 4;
         next.trust -= 5;
         event = 'Regional hydroclimate shift: polar targeting effectively cooled high latitudes but shifted lower-latitude rainfall (Duffey et al. 2023).';
-        reportTitle = 'Event: Regional Precipitation Shift';
+        reportTitle = 'Decade Report: Regional Hydroclimate Shift';
+        eventType = 'drought';
       } else {
         next.food -= 4;
         next.rain -= 3;
         next.trust -= 4;
         event = 'Public health & ecosystem variance: localized side-effect reports increased public scrutiny (Tracy et al. 2022).';
-        reportTitle = 'Event: Ecosystem Variance';
+        reportTitle = 'Decade Report: Ecosystem Scrutiny';
+        eventType = 'ecosystem';
       }
     }
 
@@ -950,7 +999,7 @@ export function App() {
     setHistory((prev) => [...prev, { year: nextYear, ...rounded, withoutSAI }]);
     setStrategyLog((prev) => [...prev, entry]);
     setYear(nextYear);
-    setReport({ year: nextYear, title: reportTitle, text: reportText, event, previous, current: rounded, cost: currentCost, choices: entry });
+    setReport({ year: nextYear, title: reportTitle, text: reportText, event, eventType, previous, current: rounded, cost: currentCost, choices: entry });
   };
 
   const closeReport = () => {
@@ -1046,45 +1095,63 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-200 font-sans">
+      {/* HIGHLY ENGAGING DECADE OVERVIEW MODAL */}
       {report && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-            <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900/95 p-6 md:p-8 shadow-2xl">
+            <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
-                <h2 className="text-3xl font-black text-white">{report.title}</h2>
-                <p className="text-slate-400">Decade Ending {report.year}</p>
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-950/60 px-3 py-1 text-xs text-blue-300 font-bold mb-2">
+                  <Globe2 size={14} /> DECADE EXECUTIVE SUMMARY
+                </div>
+                <h2 className="text-3xl font-black text-white tracking-tight">{report.title} ({report.year - 10}–{report.year})</h2>
               </div>
-              <button onClick={closeReport} className="rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-500">Continue</button>
+              <button onClick={closeReport} className="rounded-2xl bg-blue-600 px-6 py-3 font-bold text-white shadow-lg hover:bg-blue-500 transition">
+                Proceed to {report.year}
+              </button>
             </div>
-            <p className="mb-4 text-slate-300">{report.text}</p>
-            {report.event && <div className="mb-5 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-amber-100"><b>Event Notice:</b> {report.event}</div>}
-            <div className="grid gap-3 md:grid-cols-4">
-              {([
-                ['temperature', 'Temperature'],
-                ['ice', 'Arctic Ice'],
-                ['food', 'Food Security'],
-                ['rain', 'Rainfall'],
-                ['trust', 'Public Trust'],
-                ['knowledge', 'Knowledge'],
-                ['aerosolBurden', 'Aerosol Burden'],
-                ['infrastructure', 'Infrastructure'],
-              ] as [keyof Indicators, string][]).map(([key, label]) => {
-                const diff = differenceText(key, report.current[key], report.previous[key]);
-                const value = key === 'temperature' ? `+${report.current[key].toFixed(2)}°C` : `${report.current[key]}%`;
-                return (
-                  <div key={key} className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
-                    <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-                    <div className="mt-1 text-2xl font-black text-white">{value}</div>
-                    <div className={`text-sm font-bold ${diff.className}`}>{diff.text}</div>
-                  </div>
-                );
-              })}
+
+            <p className="mb-4 text-slate-300 text-base leading-relaxed">{report.text}</p>
+
+            {/* AI Illustrated Event Graphic inside Decade Overview */}
+            <EventGraphicIllustration eventType={report.eventType} />
+
+            <div className="my-6">
+              <h3 className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3">Resilience & Planetary Indicators Delta</h3>
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+                {([
+                  ['temperature', 'Temperature'],
+                  ['ice', 'Arctic Ice'],
+                  ['food', 'Food Security'],
+                  ['rain', 'Rainfall'],
+                  ['trust', 'Public Trust'],
+                  ['knowledge', 'Knowledge'],
+                  ['aerosolBurden', 'Aerosol Burden'],
+                  ['infrastructure', 'Infrastructure'],
+                ] as [keyof Indicators, string][]).map(([key, label]) => {
+                  const diff = differenceText(key, report.current[key], report.previous[key]);
+                  const value = key === 'temperature' ? `+${report.current[key].toFixed(2)}°C` : `${report.current[key]}%`;
+                  return (
+                    <div key={key} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>
+                      <div className="mt-1 text-2xl font-black text-white">{value}</div>
+                      <div className={`text-xs font-black mt-1 ${diff.className}`}>{diff.text}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
             <InfoCard>
-              <h3 className="mb-3 mt-2 text-xl font-black text-white">Knowledge-Based Decade Analysis</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
+              <h3 className="mb-3 text-lg font-black text-white flex items-center gap-2">
+                <Brain className="text-purple-400" /> Knowledge-Based Executive Analysis
+              </h3>
+              <ul className="space-y-2.5 text-sm text-slate-300">
                 {strategyExplanation(report.choices, report.current.knowledge).map((note, idx) => (
-                  <li key={idx}>• {note}</li>
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold">•</span>
+                    <span>{note}</span>
+                  </li>
                 ))}
               </ul>
             </InfoCard>
