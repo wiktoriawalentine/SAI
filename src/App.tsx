@@ -794,7 +794,7 @@ function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
 }
 
-function App() {
+export function App() {
   const [introOpen, setIntroOpen] = useState(true);
   const [year, setYear] = useState(START_YEAR);
   const [indicators, setIndicators] = useState<Indicators>(INITIAL_STATE);
@@ -1373,3 +1373,5 @@ function App() {
     </div>
   );
 }
+
+export default App;
