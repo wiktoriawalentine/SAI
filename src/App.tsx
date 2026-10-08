@@ -82,7 +82,7 @@ type Report = {
 
 const START_YEAR = 2030;
 const END_YEAR = 2130;
-const POINTS_PER_DECADE = 8; // Rebalanced baseline GP
+const POINTS_PER_DECADE = 7; // Fixed baseline capacity (Minimum 7 GP)
 
 const INITIAL_STATE: Indicators = {
   temperature: 1.6,
@@ -97,9 +97,9 @@ const INITIAL_STATE: Indicators = {
 
 const targetMeta: Record<TargetChoice, { label: string; cost: number; short: string }> = {
   none: { label: 'No SAI / pause', cost: 0, short: 'Avoids aerosol side effects, but background warming continues.' },
-  moderate: { label: 'Stabilize near 1.5°C', cost: 2, short: 'Balanced climate control with moderate side effects.' },
-  aggressive: { label: 'Aggressive cooling near 1.0°C', cost: 3, short: 'Reduces heat stress, but raises hydrological and agricultural side-effect pressure.' },
-  emergency: { label: 'Emergency cooling near 0.8°C', cost: 4, short: 'Crisis intervention with high overcooling and rainfall disruption.' },
+  moderate: { label: 'Stabilize near 1.5°C', cost: 1, short: 'Balanced climate control with moderate side effects.' },
+  aggressive: { label: 'Aggressive cooling near 1.0°C', cost: 2, short: 'Reduces heat stress, but raises hydrological and agricultural side-effect pressure.' },
+  emergency: { label: 'Emergency cooling near 0.8°C', cost: 3, short: 'Crisis intervention with high overcooling and rainfall disruption.' },
 };
 
 const particleMeta: Record<ParticleChoice, { label: string; short: string; cost: number; known: string; uncertainty: string }> = {
@@ -113,7 +113,7 @@ const particleMeta: Record<ParticleChoice, { label: string; short: string; cost:
   caco3: {
     label: 'CaCO₃ / calcite particles',
     short: 'Partly known solid alternative',
-    cost: 2,
+    cost: 1,
     known: 'Partly known cooling, partly known lifetime',
     uncertainty: 'Potentially useful alternative; chemistry and ageing remain partly uncertain.',
   },
@@ -127,7 +127,7 @@ const particleMeta: Record<ParticleChoice, { label: string; short: string; cost:
   future: {
     label: 'Future engineered particle',
     short: 'Advanced material',
-    cost: 3,
+    cost: 2,
     known: 'High efficiency',
     uncertainty: 'Requires high knowledge to deploy safely without trust or rain penalties.',
   },
@@ -147,27 +147,51 @@ const locationMeta: Record<LocationChoice, { label: string; cost: number; short:
 
 const researchMeta: Record<ResearchChoice, { label: string; cost: number; short: string }> = {
   none: { label: 'No support action', cost: 0, short: 'Saves points, but leaves vulnerability unaddressed.' },
-  lab: { label: 'Laboratory particle testing', cost: 2, short: 'Raises scientific knowledge and reduces material costs.' },
-  monitoring: { label: 'Monitoring and open data', cost: 2, short: 'Raises trust, lowers event likelihood and improves infrastructure.' },
-  adaptation: { label: 'Adaptation and compensation', cost: 2, short: 'Protects food, rain, and public trust in vulnerable regions.' },
+  lab: { label: 'Laboratory particle testing', cost: 2, short: 'Raises scientific knowledge (+15%) and unlocks particle insights.' },
+  monitoring: { label: 'Monitoring and open data', cost: 2, short: 'Raises trust (+10%), lowers event likelihood, and improves infrastructure.' },
+  adaptation: { label: 'Adaptation and compensation', cost: 2, short: 'Protects food (+10%), rain (+6%), and trust (+12%) in vulnerable regions.' },
 };
 
 const sourceThemes = [
   {
     title: 'Visioni et al. (2020) — seasonally modulated SAI',
-    detail: 'Basis for Level 2. Seasonal injection can reach global objectives while changing regional precipitation and sea ice outcomes.',
+    detail: 'Basis for Level 2. Seasonal injection can reach similar global objectives while changing regional outcomes such as India precipitation, Amazon dry-season rainfall and Arctic sea ice.',
   },
   {
     title: 'Cohen et al. (2025) — regional SAI case study',
-    detail: 'Basis for heat, food and regional-impact indicators. SAI can reduce extreme heat and stabilize soil moisture.',
+    detail: 'Basis for heat, food and regional-impact indicators. SAI can reduce heat extremes and improve some wet-season precipitation, soil moisture and crop outcomes compared with climate change.',
   },
   {
     title: 'Duffey et al. (2023) — polar geoengineering review',
-    detail: 'Basis for Level 3. Polar SAI can target ice protection with tailored regional forcing.',
+    detail: 'Basis for Level 3. Polar SAI can target ice but is not purely local and can create lower-latitude rainfall problems.',
   },
   {
     title: 'Vattioni et al. (2025) — solid alumina/calcite particles',
-    detail: 'Basis for Level 4. Solid particles may avoid sulfate limitations as knowledge and microphysical modeling advance.',
+    detail: 'Basis for Level 4. Solid particles may avoid some sulfate limitations, but the authors emphasize large microphysical and chemical uncertainty.',
+  },
+  {
+    title: 'Vattioni et al. (2023) — alumina and ozone uncertainty',
+    detail: 'Basis for alumina uncertainty. Alumina surface chemistry is poorly constrained and modeled ozone impacts depend strongly on uncertain reaction assumptions.',
+  },
+  {
+    title: 'Proctor et al. (2018) — agriculture and volcanic aerosols',
+    detail: 'Basis for the food/sunlight penalty. Stratospheric aerosols can cool the surface, but reduced direct sunlight can negatively affect crop yields.',
+  },
+  {
+    title: 'Simpson et al. (2019) — hydroclimate and stratospheric heating',
+    detail: 'Basis for aerosol-burden and rainfall penalties. Sulfate aerosols can heat the stratosphere and affect circulation and hydrology.',
+  },
+  {
+    title: 'Haywood et al. (2013) — asymmetric forcing and Sahel rainfall',
+    detail: 'Basis for regional inequality events. Hemispherically asymmetric aerosol loading can create strong rainfall differences, including Sahel drought pressure.',
+  },
+  {
+    title: 'Parker & Irvine (2018) — termination shock',
+    detail: 'Basis for the interruption rule. Sudden termination after SAI can cause very rapid warming, giving natural and human systems less time to adapt.',
+  },
+  {
+    title: 'Tracy et al. (2022) and Fu et al. (2025) — health/ecosystems and drought inequality',
+    detail: 'Basis for uncertainty events and trust loss. SAI may affect public health, ecosystems, water, agriculture and unequal drought exposure.',
   },
 ];
 
@@ -205,51 +229,34 @@ function targetTemperature(target: TargetChoice, withoutSAI: number): number {
   return 0.8;
 }
 
-// Knowledge-based cost discount helper
-function getChoiceCosts(knowledge: number) {
-  const particleDiscount = knowledge >= 25 ? 1 : 0;
-  const spatialDiscount = knowledge >= 50 ? 1 : 0;
-  const tierDiscount = knowledge >= 75 ? 1 : 0;
-
-  return {
-    particleDiscount,
-    spatialDiscount,
-    tierDiscount,
-  };
-}
-
 function computeCost(
   target: TargetChoice,
   particle: ParticleChoice,
   season: SeasonChoice,
   location: LocationChoice,
   research: ResearchChoice,
-  knowledge: number,
 ): number {
-  const { particleDiscount, spatialDiscount, tierDiscount } = getChoiceCosts(knowledge);
-
-  let cost = Math.max(0, targetMeta[target].cost - tierDiscount);
+  let cost = targetMeta[target].cost;
   if (target !== 'none') {
-    cost += Math.max(0, particleMeta[particle].cost - particleDiscount);
-    cost += Math.max(0, seasonMeta[season].cost - spatialDiscount);
-    cost += Math.max(0, locationMeta[location].cost - spatialDiscount);
+    cost += particleMeta[particle].cost;
+    cost += seasonMeta[season].cost;
+    cost += locationMeta[location].cost;
   }
-  cost += Math.max(0, researchMeta[research].cost - tierDiscount);
+  cost += researchMeta[research].cost;
   return cost;
 }
 
 function applyBurdenPressure(next: Indicators): string[] {
   const notes: string[] = [];
-  if (next.aerosolBurden > 50) {
+  if (next.aerosolBurden > 55) {
     next.rain -= 2;
     next.food -= 1;
-    next.trust -= 1;
-    notes.push('Aerosol burden exceeded 50%: mild hydrological and trust penalties applied.');
+    notes.push('Aerosol burden exceeded 55%: mild hydrological pressure applied.');
   }
   if (next.aerosolBurden > 75) {
-    next.rain -= 4;
-    next.food -= 3;
-    next.trust -= 3;
+    next.rain -= 3;
+    next.food -= 2;
+    next.trust -= 2;
     next.infrastructure -= 2;
     notes.push('Aerosol burden exceeded 75%: elevated side-effect pressure zone.');
   }
@@ -263,13 +270,13 @@ function calcEventChance(
   research: ResearchChoice,
   indicators: Indicators,
 ): number {
-  let chance = 0.05;
-  chance += particle === 'future' ? 0.08 : particle === 'alumina' ? 0.05 : 0.02;
-  chance += target === 'emergency' ? 0.08 : target === 'aggressive' ? 0.04 : 0;
-  chance += indicators.aerosolBurden / 600;
-  chance -= research === 'monitoring' ? 0.08 : 0;
-  chance -= research === 'lab' ? 0.03 : 0;
-  return Math.max(0.02, Math.min(0.35, chance));
+  let chance = 0.04;
+  chance += particle === 'future' ? 0.06 : particle === 'alumina' ? 0.04 : 0.01;
+  chance += target === 'emergency' ? 0.06 : target === 'aggressive' ? 0.03 : 0;
+  chance += indicators.aerosolBurden / 800;
+  chance -= research === 'monitoring' ? 0.06 : 0;
+  chance -= research === 'lab' ? 0.02 : 0;
+  return Math.max(0.01, Math.min(0.25, chance));
 }
 
 function earthStatus(indicators: Indicators): { label: string; detail: string; emoji: string } {
@@ -336,7 +343,7 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
               </div>
               <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white">The SAI Governance Challenge</h1>
               <p className="mt-4 max-w-3xl text-slate-300 md:text-lg">
-                You are the climate council from 2030 to 2130. Manage global temperature, monsoon rainfall, food security, public trust, and scientific knowledge. High knowledge unlocks GP discounts for optimal choices.
+                You are the climate council from 2030 to 2130. Manage global temperature, monsoon rainfall, food security, public trust, and scientific knowledge. You have a stable budget of 7 Governance Points each decade.
               </p>
             </div>
             <button
@@ -357,9 +364,9 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           </InfoCard>
 
           <InfoCard>
-            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game Rules & Discounts</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game Rules</h2>
             <p className="text-slate-300 leading-relaxed">
-              Survive 10 decades until 2130. **If any attribute drops to 0%, the game immediately ends.** Invest in research to lower option costs and build resilience!
+              Survive 10 decades until 2130. You receive **7 GP** each decade. **If any attribute drops to 0%, the game immediately ends.** Use support actions like Monitoring and Adaptation to preserve public trust and food security!
             </p>
           </InfoCard>
         </div>
@@ -397,7 +404,6 @@ function ChoiceCard({
   title,
   subtitle,
   cost,
-  discountedCost,
   onClick,
   tone = 'blue',
 }: {
@@ -406,7 +412,6 @@ function ChoiceCard({
   title: string;
   subtitle: string;
   cost: number;
-  discountedCost?: number;
   onClick: () => void;
   tone?: 'blue' | 'emerald' | 'red' | 'purple' | 'amber';
 }) {
@@ -425,8 +430,6 @@ function ChoiceCard({
     amber: 'text-amber-300',
   }[tone];
 
-  const effectiveCost = discountedCost !== undefined ? discountedCost : cost;
-
   return (
     <button
       type="button"
@@ -439,15 +442,8 @@ function ChoiceCard({
           <div className={`font-bold ${titleClass}`}>{title}</div>
           <div className="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-400">{subtitle}</div>
         </div>
-        <div className="shrink-0 rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-300 flex items-center gap-1">
-          {discountedCost !== undefined && discountedCost < cost ? (
-            <>
-              <span className="line-through text-slate-500">{cost}</span>
-              <span className="text-emerald-400 font-bold">{effectiveCost} GP</span>
-            </>
-          ) : (
-            <span>{effectiveCost} GP</span>
-          )}
+        <div className="shrink-0 rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-300">
+          {cost} GP
         </div>
       </div>
     </button>
@@ -461,7 +457,7 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
   const foodPercent = indicators.food;
   const tempAnomaly = indicators.temperature;
 
-  const solarIrradiance = Math.max(30, Math.round(100 - burdenPercent * 0.3 - (target === 'aggressive' ? 8 : target === 'emergency' ? 15 : 0)));
+  const solarIrradiance = Math.max(30, Math.round(100 - burdenPercent * 0.3 - (target === 'aggressive' ? 6 : target === 'emergency' ? 12 : 0)));
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl min-h-[380px] flex flex-col justify-between p-6">
@@ -571,18 +567,18 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
   const items = [
     {
       threshold: 25,
-      title: '25% Knowledge: Particle Cost Discount',
-      text: 'Particle materials in Level 4 now cost 1 GP less due to microphysical understanding.',
+      title: '25% Knowledge: Target & Material Insights',
+      text: 'Detailed numerical breakdowns revealed for temperature targets and materials.',
     },
     {
       threshold: 50,
-      title: '50% Knowledge: Spatial & Seasonal Discount',
-      text: 'Seasonality and location choices cost 1 GP less as regional climate modeling improves.',
+      title: '50% Knowledge: Spatial & Seasonal Insights',
+      text: 'Reveals regional monsoon and polar ice dynamics for seasonal & spatial choices.',
     },
     {
-      threshold: 75,
-      title: '75% Knowledge: Master Governance Discount',
-      text: 'Temperature targets and support actions receive a 1 GP cost reduction.',
+      threshold: 70,
+      title: '70% Knowledge: Solid Particle Mastery',
+      text: 'Reduces uncertainty risks when choosing CaCO₃ and Alumina particles.',
     },
     {
       threshold: 80,
@@ -595,9 +591,9 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
 
   return (
     <InfoCard>
-      <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Brain className="text-purple-400" /> Knowledge & GP Discount Tracker</h2>
+      <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Brain className="text-purple-400" /> Scientific Knowledge Tracker</h2>
       <div className="mb-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
-        Scientific Knowledge: <b>{knowledge}%</b>. Building knowledge directly reduces Governance Point costs for optimal strategies!
+        Scientific Knowledge: <b>{knowledge}%</b>. Perform Laboratory Testing to raise knowledge and unlock insights.
       </div>
       <div className="space-y-3 text-sm">
         {items.map((item) => {
@@ -638,8 +634,7 @@ export function App() {
   const futureUnlocked = indicators.knowledge >= 80 && year >= 2090;
   const emergencyUnlocked = year >= 2070 || indicators.temperature >= 2.3;
 
-  const discounts = getChoiceCosts(indicators.knowledge);
-  const currentCost = computeCost(target, particle, season, location, research, indicators.knowledge);
+  const currentCost = computeCost(target, particle, season, location, research);
   const pointsRemaining = POINTS_PER_DECADE - currentCost;
 
   const processDecade = () => {
@@ -648,7 +643,7 @@ export function App() {
     const previousTarget = strategyLog[strategyLog.length - 1]?.target ?? 'none';
     const activeSAIDecades = strategyLog.filter((e) => e.target !== 'none').length;
 
-    // Check for Termination Shock
+    // Check for Termination Shock (Parker & Irvine 2018)
     if (target === 'none' && previousTarget !== 'none' && activeSAIDecades >= 2) {
       setTerminationShock(true);
       setGameOver(true);
@@ -683,19 +678,19 @@ export function App() {
       if (target === 'moderate') {
         next.food -= 1;
         next.rain -= 2;
-        next.trust += 2;
+        next.trust += 2; // Moderate cooling stabilizes climate and maintains trust
         next.aerosolBurden += 5;
       }
       if (target === 'aggressive') {
         next.food -= 3;
-        next.rain -= 5;
-        next.trust -= 2;
+        next.rain -= 4;
+        next.trust -= 1;
         next.aerosolBurden += 10;
       }
       if (target === 'emergency') {
-        next.food -= 6;
-        next.rain -= 10;
-        next.trust -= 5;
+        next.food -= 5;
+        next.rain -= 8;
+        next.trust -= 3;
         next.aerosolBurden += 15;
       }
 
@@ -720,25 +715,26 @@ export function App() {
 
       if (season === 'annual') next.ice += 2;
       if (season === 'spring') { next.ice += 1; next.rain -= 2; }
-      if (season === 'autumn') { next.ice += 8; next.rain += 2; }
+      if (season === 'autumn') { next.ice += 8; next.rain += 2; } // Visioni et al. 2020
 
       if (location === 'tropical') next.rain += 1;
-      if (location === 'subtropical') { next.ice += 3; next.rain -= 2; }
-      if (location === 'polar') { next.ice += 12; next.rain -= 8; next.food -= 4; }
+      if (location === 'subtropical') { next.ice += 3; next.rain -= 1; }
+      if (location === 'polar') { next.ice += 12; next.rain -= 6; next.food -= 3; } // Duffey et al. 2023
     }
 
+    // Support Actions (Guaranteed Positive Impacts)
     if (research === 'lab') {
       next.knowledge += 15;
-      next.trust += 4;
+      next.trust += 3;
       next.infrastructure += 2;
     }
     if (research === 'monitoring') {
       next.knowledge += 5;
-      next.trust += 10;
+      next.trust += 10; // Clear pro-trust reward
       next.infrastructure += 8;
     }
     if (research === 'adaptation') {
-      next.trust += 12;
+      next.trust += 12; // Clear pro-trust reward
       next.food += 10;
       next.rain += 6;
     }
@@ -747,16 +743,16 @@ export function App() {
 
     let eventChance = calcEventChance(target, particle, location, research, next);
     if (Math.random() < eventChance) {
-      next.rain -= 6;
-      next.food -= 5;
-      next.trust -= 6;
+      next.rain -= 5;
+      next.food -= 4;
+      next.trust -= 3;
       event = 'Regional Hydroclimate Anomaly: rainfall fluctuations affected crop production and regional trust.';
       reportTitle = 'Event: Hydroclimate Variance';
     }
 
     const rounded = roundIndicators(next);
 
-    // CHECK FOR 0% ATTRIBUTE COLLAPSE (GAME OVER RULE)
+    // CHECK FOR 0% ATTRIBUTE COLLAPSE
     if (rounded.ice <= 0 || rounded.food <= 0 || rounded.rain <= 0 || rounded.trust <= 0 || rounded.infrastructure <= 0) {
       let failedAttr = '';
       if (rounded.ice <= 0) failedAttr = 'Arctic Sea Ice';
@@ -810,7 +806,7 @@ export function App() {
           <AlertOctagon className="mx-auto mb-5 text-red-400" size={88} />
           <h1 className="text-5xl font-black text-white">Termination Shock</h1>
           <p className="mt-5 text-left text-lg leading-relaxed text-slate-300">
-            The SAI program was abruptly interrupted. Unmasked greenhouse warming occurred rapidly, triggering catastrophic system collapse.
+            The SAI program was abruptly interrupted. Unmasked greenhouse warming occurred rapidly, triggering catastrophic system collapse (Parker & Irvine 2018).
           </p>
           <button onClick={resetGame} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-red-700 px-6 py-4 font-bold text-white hover:bg-red-600">
             <RefreshCcw size={18} /> Restart Game
@@ -828,7 +824,7 @@ export function App() {
           <h1 className="text-5xl font-black text-white">System Collapse</h1>
           <p className="mt-4 text-2xl font-bold text-red-400">{attributeCollapseReason} reached 0%</p>
           <p className="mt-4 text-slate-300">
-            A core planetary or human resilience metric dropped to zero, breaking system stability. Invest in research, monitoring, and adaptation to protect vulnerable attributes.
+            A core planetary or human resilience metric dropped to zero, breaking system stability. Use Monitoring or Compensation & Adaptation actions to keep Trust, Food, and Rainfall well above danger levels.
           </p>
           <button onClick={resetGame} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-bold text-white hover:bg-blue-500">
             <RefreshCcw size={18} /> Try Again
@@ -933,53 +929,53 @@ export function App() {
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><ThermometerSnowflake size={16} /> Level 1: Target Choice</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={target === 'none'} title="No SAI / pause" subtitle={targetMeta.none.short} cost={targetMeta.none.cost} discountedCost={Math.max(0, targetMeta.none.cost - discounts.tierDiscount)} tone="amber" onClick={() => setTarget('none')} />
-                    <ChoiceCard selected={target === 'moderate'} title="Stabilize near 1.5°C" subtitle={targetMeta.moderate.short} cost={targetMeta.moderate.cost} discountedCost={Math.max(0, targetMeta.moderate.cost - discounts.tierDiscount)} tone="blue" onClick={() => setTarget('moderate')} />
-                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle={targetMeta.aggressive.short} cost={targetMeta.aggressive.cost} discountedCost={Math.max(0, targetMeta.aggressive.cost - discounts.tierDiscount)} tone="emerald" onClick={() => setTarget('aggressive')} />
-                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? targetMeta.emergency.short : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost} discountedCost={Math.max(0, targetMeta.emergency.cost - discounts.tierDiscount)} tone="red" onClick={() => setTarget('emergency')} />
+                    <ChoiceCard selected={target === 'none'} title="No SAI / pause" subtitle={targetMeta.none.short} cost={targetMeta.none.cost} tone="amber" onClick={() => setTarget('none')} />
+                    <ChoiceCard selected={target === 'moderate'} title="Stabilize near 1.5°C" subtitle={targetMeta.moderate.short} cost={targetMeta.moderate.cost} tone="blue" onClick={() => setTarget('moderate')} />
+                    <ChoiceCard selected={target === 'aggressive'} title="Aggressive cooling near 1.0°C" subtitle={targetMeta.aggressive.short} cost={targetMeta.aggressive.cost} tone="emerald" onClick={() => setTarget('aggressive')} />
+                    <ChoiceCard selected={target === 'emergency'} disabled={!emergencyUnlocked} title="Emergency cooling near 0.8°C" subtitle={emergencyUnlocked ? targetMeta.emergency.short : 'Locked until 2070 or severe warming.'} cost={targetMeta.emergency.cost} tone="red" onClick={() => setTarget('emergency')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Activity size={16} /> Level 2: Seasonality</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={season === 'annual'} title="Annual injection" subtitle={seasonMeta.annual.short} cost={seasonMeta.annual.cost} discountedCost={Math.max(0, seasonMeta.annual.cost - discounts.spatialDiscount)} onClick={() => setSeason('annual')} />
-                    <ChoiceCard selected={season === 'spring'} title="Spring injection" subtitle={seasonMeta.spring.short} cost={seasonMeta.spring.cost} discountedCost={Math.max(0, seasonMeta.spring.cost - discounts.spatialDiscount)} tone="amber" onClick={() => setSeason('spring')} />
-                    <ChoiceCard selected={season === 'autumn'} title="Autumn injection" subtitle={seasonMeta.autumn.short} cost={seasonMeta.autumn.cost} discountedCost={Math.max(0, seasonMeta.autumn.cost - discounts.spatialDiscount)} tone="emerald" onClick={() => setSeason('autumn')} />
+                    <ChoiceCard selected={season === 'annual'} title="Annual injection" subtitle={seasonMeta.annual.short} cost={seasonMeta.annual.cost} onClick={() => setSeason('annual')} />
+                    <ChoiceCard selected={season === 'spring'} title="Spring injection" subtitle={seasonMeta.spring.short} cost={seasonMeta.spring.cost} tone="amber" onClick={() => setSeason('spring')} />
+                    <ChoiceCard selected={season === 'autumn'} title="Autumn injection" subtitle={seasonMeta.autumn.short} cost={seasonMeta.autumn.cost} tone="emerald" onClick={() => setSeason('autumn')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Globe2 size={16} /> Level 3: Injection Location</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={location === 'tropical'} title="Tropical / equatorial" subtitle={locationMeta.tropical.short} cost={locationMeta.tropical.cost} discountedCost={Math.max(0, locationMeta.tropical.cost - discounts.spatialDiscount)} onClick={() => setLocation('tropical')} />
-                    <ChoiceCard selected={location === 'subtropical'} title="Subtropical" subtitle={locationMeta.subtropical.short} cost={locationMeta.subtropical.cost} discountedCost={Math.max(0, locationMeta.subtropical.cost - discounts.spatialDiscount)} tone="blue" onClick={() => setLocation('subtropical')} />
-                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle={locationMeta.polar.short} cost={locationMeta.polar.cost} discountedCost={Math.max(0, locationMeta.polar.cost - discounts.spatialDiscount)} tone="red" onClick={() => setLocation('polar')} />
+                    <ChoiceCard selected={location === 'tropical'} title="Tropical / equatorial" subtitle={locationMeta.tropical.short} cost={locationMeta.tropical.cost} onClick={() => setLocation('tropical')} />
+                    <ChoiceCard selected={location === 'subtropical'} title="Subtropical" subtitle={locationMeta.subtropical.short} cost={locationMeta.subtropical.cost} tone="blue" onClick={() => setLocation('subtropical')} />
+                    <ChoiceCard selected={location === 'polar'} title="Polar" subtitle={locationMeta.polar.short} cost={locationMeta.polar.cost} tone="red" onClick={() => setLocation('polar')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Atom size={16} /> Level 4: Material Selection</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle={particleMeta.sulfate.short} cost={particleMeta.sulfate.cost} discountedCost={Math.max(0, particleMeta.sulfate.cost - discounts.particleDiscount)} tone="blue" onClick={() => setParticle('sulfate')} />
-                    <ChoiceCard selected={particle === 'caco3'} title="CaCO₃ / calcite particles" subtitle={particleMeta.caco3.short} cost={particleMeta.caco3.cost} discountedCost={Math.max(0, particleMeta.caco3.cost - discounts.particleDiscount)} tone="purple" onClick={() => setParticle('caco3')} />
-                    <ChoiceCard selected={particle === 'alumina'} title="Alumina particles" subtitle={particleMeta.alumina.short} cost={particleMeta.alumina.cost} discountedCost={Math.max(0, particleMeta.alumina.cost - discounts.particleDiscount)} tone="amber" onClick={() => setParticle('alumina')} />
-                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={particleMeta.future.short} cost={particleMeta.future.cost} discountedCost={Math.max(0, particleMeta.future.cost - discounts.particleDiscount)} tone="red" onClick={() => setParticle('future')} />
+                    <ChoiceCard selected={particle === 'sulfate'} title="Sulfate particles" subtitle={particleMeta.sulfate.short} cost={particleMeta.sulfate.cost} tone="blue" onClick={() => setParticle('sulfate')} />
+                    <ChoiceCard selected={particle === 'caco3'} title="CaCO₃ / calcite particles" subtitle={particleMeta.caco3.short} cost={particleMeta.caco3.cost} tone="purple" onClick={() => setParticle('caco3')} />
+                    <ChoiceCard selected={particle === 'alumina'} title="Alumina particles" subtitle={particleMeta.alumina.short} cost={particleMeta.alumina.cost} tone="amber" onClick={() => setParticle('alumina')} />
+                    <ChoiceCard selected={particle === 'future'} disabled={!futureUnlocked} title="Future engineered particle" subtitle={particleMeta.future.short} cost={particleMeta.future.cost} tone="red" onClick={() => setParticle('future')} />
                   </div>
                 </section>
 
                 <section>
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Microscope size={16} /> Support Action</h3>
                   <div className="space-y-2">
-                    <ChoiceCard selected={research === 'none'} title="No support action" subtitle={researchMeta.none.short} cost={researchMeta.none.cost} discountedCost={Math.max(0, researchMeta.none.cost - discounts.tierDiscount)} onClick={() => setResearch('none')} />
-                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing (+Knowledge)" subtitle={researchMeta.lab.short} cost={researchMeta.lab.cost} discountedCost={Math.max(0, researchMeta.lab.cost - discounts.tierDiscount)} tone="purple" onClick={() => setResearch('lab')} />
-                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data (+Trust & Infra)" subtitle={researchMeta.monitoring.short} cost={researchMeta.monitoring.cost} discountedCost={Math.max(0, researchMeta.monitoring.cost - discounts.tierDiscount)} tone="emerald" onClick={() => setResearch('monitoring')} />
-                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation (+Food & Rain)" subtitle={researchMeta.adaptation.short} cost={researchMeta.adaptation.cost} discountedCost={Math.max(0, researchMeta.adaptation.cost - discounts.tierDiscount)} tone="amber" onClick={() => setResearch('adaptation')} />
+                    <ChoiceCard selected={research === 'none'} title="No support action" subtitle={researchMeta.none.short} cost={researchMeta.none.cost} onClick={() => setResearch('none')} />
+                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing (+Knowledge)" subtitle={researchMeta.lab.short} cost={researchMeta.lab.cost} tone="purple" onClick={() => setResearch('lab')} />
+                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data (+Trust & Infra)" subtitle={researchMeta.monitoring.short} cost={researchMeta.monitoring.cost} tone="emerald" onClick={() => setResearch('monitoring')} />
+                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation (+Food & Rain)" subtitle={researchMeta.adaptation.short} cost={researchMeta.adaptation.cost} tone="amber" onClick={() => setResearch('adaptation')} />
                   </div>
                 </section>
               </div>
 
-              {pointsRemaining < 0 && <div className="mt-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">Selected package exceeds governance points! Choose a less demanding setup or build knowledge for GP discounts.</div>}
+              {pointsRemaining < 0 && <div className="mt-5 rounded-2xl border border-red-700 bg-red-950/30 p-4 text-sm text-red-200">Selected package exceeds your 7 Governance Points limit! Choose a lighter combination.</div>}
 
               <button onClick={processDecade} disabled={pointsRemaining < 0} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-bold text-white shadow-lg transition hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed">
                 <Play size={18} /> Complete Decade
