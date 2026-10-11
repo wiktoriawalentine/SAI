@@ -439,10 +439,13 @@ function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boo
     alumina: 'High scattering performance, but chlorine surface chemistry is unconstrained (Vattioni et al. 2023).',
     future: 'Advanced engineered particle. Maximum efficiency with minimal aerosol burden.',
   };
+  const caco3Trust = knowledge < 60 ? 'trust -2' : 'no trust penalty';
+  const aluminaTrust = knowledge < 60 ? 'trust -3' : 'trust -1';
+
   const exact: Record<ParticleChoice, string> = {
     sulfate: 'Rain -1; burden +3.',
-    caco3: 'Food +2; burden +3 (Vattioni et al. 2025).',
-    alumina: 'Knowledge +2; burden +3 (Vattioni et al. 2023).',
+    caco3: `Knowledge +1; food +1; ${caco3Trust}; burden +3 (Vattioni et al. 2025).`,
+    alumina: `Knowledge +2; rain -1; ${aluminaTrust}; burden +3 (Vattioni et al. 2023).`,
     future: 'Knowledge +3; food +5; rain +2; burden +2.',
   };
   return lockedEffectText(70, basic[choice], exact[choice], knowledge);
@@ -583,6 +586,9 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
                 <div className="mt-1 text-sm text-slate-400">{source.detail}</div>
               </div>
             ))}
+          </div>
+          <div className="mt-5 rounded-2xl border border-amber-500/40 bg-amber-950/20 p-4 text-sm text-amber-100">
+            <b>Scientific disclaimer:</b> This game translates published research trends into simplified scoring rules. The directions of the effects are research-based, but the exact point values and event probabilities are not climate-model outputs. The game is an educational governance simulation, not a predictive climate model.
           </div>
         </InfoCard>
       </div>
@@ -944,11 +950,15 @@ export function App() {
         next.aerosolBurden += 3;
       }
       if (particle === 'caco3') {
-        next.food += 2;
+        next.knowledge += 1;
+        next.food += 1;
+        next.trust -= indicators.knowledge < 60 ? 2 : 0;
         next.aerosolBurden += 3;
       }
       if (particle === 'alumina') {
         next.knowledge += 2;
+        next.rain -= 1;
+        next.trust -= indicators.knowledge < 60 ? 3 : 1;
         next.aerosolBurden += 3;
       }
       if (particle === 'future') {
