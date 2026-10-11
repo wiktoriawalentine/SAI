@@ -1,4 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Stars } from '@react-three/drei';
+import * as THREE from 'three';
 import {
   Activity,
   AlertOctagon,
@@ -246,14 +249,14 @@ function applyBurdenPressure(next: Indicators): string[] {
   if (next.aerosolBurden > 55) {
     next.rain -= 2;
     next.food -= 1;
-    notes.push('Aerosol burden exceeded 55%: mild hydrological pressure applied.');
+    notes.push('Simpson et al. (2019): Aerosol burden >55% caused stratospheric heating and hydroclimate disruption.');
   }
   if (next.aerosolBurden > 75) {
-    next.rain -= 3;
-    next.food -= 2;
-    next.trust -= 2;
+    next.rain -= 4;
+    next.food -= 3;
+    next.trust -= 3;
     next.infrastructure -= 2;
-    notes.push('Aerosol burden exceeded 75%: elevated side-effect pressure zone.');
+    notes.push('Severe aerosol burden >75%: Hydrological cycle dampening and direct sunlight reductions penalized agricultural yields.');
   }
   return notes;
 }
@@ -327,53 +330,53 @@ function strategyExplanation(entry: StrategyEntry, knowledge: number): string[] 
   const notes: string[] = [];
 
   if (knowledge < 30) {
-    notes.push('🔬 Basic Observation (<30% Knowledge): Primary temperature targets and basic support actions are monitored. Invest in laboratory testing to reveal microphysical and hydroclimate mechanics.');
+    notes.push('🔬 Basic Observation (<30% Knowledge): Primary temperature targets and basic support actions are monitored. Invest in research to reveal microphysical and hydroclimate mechanics.');
     if (entry.target === 'none') notes.push('No SAI deployed; greenhouse warming continues.');
     else notes.push(`Deployed ${targetMeta[entry.target].label} cooling.`);
     return notes;
   }
 
-  notes.push('📊 Hydroclimate Insight (30%+ Knowledge): Monsoon and seasonal shift analysis unlocked.');
+  notes.push('📊 Research Insight (Cohen et al. 2025): Temperature targets control global heat stress, but regional hydroclimate shifts depend heavily on injection geometry.');
   if (entry.target === 'none') {
-    notes.push('No SAI avoids direct aerosol side effects, but background warming reduces Arctic ice and crop resilience.');
+    notes.push('No SAI avoids aerosol side effects, but unmitigated climate warming severely degrades Arctic ice and agricultural resilience.');
   } else if (entry.target === 'moderate') {
-    notes.push('Moderate cooling stabilizes temperature near 1.5°C while keeping hydrological disruption low.');
+    notes.push('Moderate cooling near 1.5°C achieves a balanced trade-off between heat extreme reduction and hydrological perturbation.');
   } else if (entry.target === 'aggressive') {
-    notes.push('Aggressive cooling reduces heat stress, but direct sunlight reductions affect crop photosynthesis (Proctor et al. 2018).');
+    notes.push('Proctor et al. (2018): Aggressive cooling reduces thermal stress, but decreased direct solar radiation penalizes photosynthetic crop yields.');
   } else {
-    notes.push('Emergency cooling controls temperature rapidly, but causes significant rainfall reduction (Simpson et al. 2019).');
+    notes.push('Simpson et al. (2019): Emergency cooling strongly alters stratospheric heating, triggering significant precipitation deficits.');
   }
 
   if (entry.season === 'autumn') {
-    notes.push('Autumn injection favours Arctic sea-ice preservation while mitigating Indian monsoon disruptions (Visioni et al. 2020).');
+    notes.push('Visioni et al. (2020): Autumn injection maximizes Arctic sea-ice preservation while mitigating monsoonal rainfall disruptions over India and South America.');
   }
   if (entry.location === 'polar') {
-    notes.push('Polar injection preserves Arctic ice, but redistributes precipitation patterns to lower latitudes (Duffey et al. 2023).');
+    notes.push('Duffey et al. (2023): Polar injection effectively concentrates cooling over high latitudes, but disrupts lower-latitude precipitation via ITCZ shifts.');
   }
 
   if (knowledge >= 60) {
-    notes.push('🧪 Microphysical & Chemistry Insight (60%+ Knowledge): Solid particle chemistry and ozone dynamics unlocked.');
+    notes.push('🧪 Microphysics & Chemistry Insight (Vattioni et al. 2023, 2025): Material selection determines stratospheric chemistry and aerosol lifetime.');
     if (entry.particle === 'sulfate') {
-      notes.push('Sulfate aerosols create stratospheric heating and moderate ozone disruption, but remain the most predictable option (Simpson et al. 2019).');
+      notes.push('Simpson et al. (2019): Sulfate aerosols heat the lower stratosphere and promote ozone destruction pathways.');
     } else if (entry.particle === 'caco3') {
-      notes.push('CaCO₃ calcite particles neutralize stratospheric acids, reducing ozone depletion risks (Vattioni et al. 2025).');
+      notes.push('Vattioni et al. (2025): Calcite particles neutralize stratospheric acids, preserving stratospheric ozone and reducing agricultural dimming penalties.');
     } else if (entry.particle === 'alumina') {
-      notes.push('Alumina provides strong optical scattering, but chlorine surface chemistry uncertainties remain active (Vattioni et al. 2023).');
+      notes.push('Vattioni et al. (2023): Solid alumina particles avoid sulfate thermal heating, but carry unconstrained surface chlorine chemistry risks.');
     } else if (entry.particle === 'future') {
-      notes.push('Engineered nanoparticles optimize optical scattering while minimizing microphysical coagulation.');
+      notes.push('Engineered nanoparticles optimize optical scattering efficiency while minimizing microphysical coagulation and burden penalties.');
     }
   }
 
   if (knowledge >= 90) {
-    notes.push('⚡ Complete Theoretical Precision (90%+ Mastery): Full predictive clarity achieved! All radiative forcing, ozone feedback loops, and regional monsoon responses are completely understood and optimized.');
+    notes.push('⚡ Scientific Mastery (100% Precision): Full theoretical understanding of radiative forcing, stratospheric ozone feedback, and regional hydrological responses achieved!');
   }
 
   if (entry.research === 'lab') {
-    notes.push('Laboratory testing generated +8% Scientific Knowledge.');
+    notes.push('Laboratory testing generated scientific knowledge, unlocking chemical and physical aerosol models.');
   } else if (entry.research === 'monitoring') {
-    notes.push('Monitoring and open data boosted public trust (+10% Trust) and infrastructure resilience.');
+    notes.push('Monitoring and open data boosted public trust (+10% Trust) and system infrastructure resilience.');
   } else if (entry.research === 'adaptation') {
-    notes.push('Adaptation funding shielded vulnerable agriculture and water distribution networks.');
+    notes.push('Adaptation funding shielded vulnerable regional agriculture and water distribution systems.');
   }
 
   return notes;
@@ -386,15 +389,15 @@ function lockedEffectText(threshold: number, basic: string, exact: string, knowl
 
 function targetSubtitle(choice: TargetChoice, knowledge: number): string {
   const basic: Record<TargetChoice, string> = {
-    none: 'No aerosol side effects, but warming continues.',
-    moderate: 'Balanced intervention. Moderate side effects.',
-    aggressive: 'Reduces heat stress, but rainfall disruption and sunlight pressure rise.',
-    emergency: 'Extreme action. High overcooling and public backlash likelihood.',
+    none: 'No aerosol side effects, but baseline warming continues.',
+    moderate: 'Balanced intervention near 1.5°C. Low side effects.',
+    aggressive: 'Reduces heat stress, but dimming reduces crop photosynthesis (Proctor et al. 2018).',
+    emergency: 'Extreme action. Rapid temperature drop, high monsoon disruption (Simpson et al. 2019).',
   };
   const exact: Record<TargetChoice, string> = {
     none: 'Temp follows warming; ice -6; food -4; rain -3; trust +2; burden -15; infrastructure +2.',
     moderate: 'Temp → +1.5°C; food -1; rain -2; trust +2; burden +5.',
-    aggressive: 'Temp → +1.0°C; food -3; rain -4; trust -1; burden +10.',
+    aggressive: 'Temp → +1.0°C; food -3 (photons penalty); rain -4; trust -1; burden +10.',
     emergency: 'Temp → +0.8°C; food -5; rain -8; trust -3; burden +15.',
   };
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
@@ -403,14 +406,14 @@ function targetSubtitle(choice: TargetChoice, knowledge: number): string {
 function seasonSubtitle(choice: SeasonChoice, knowledge: number, paused: boolean): string {
   if (paused) return 'No injection this decade.';
   const basic: Record<SeasonChoice, string> = {
-    annual: 'Reference strategy. Stable, predictable baseline.',
-    spring: 'Efficient seasonal cooling.',
-    autumn: 'Better ice and India-monsoon trade-off.',
+    annual: 'Reference strategy. Continuous baseline injection.',
+    spring: 'Efficient seasonal cooling for Northern Hemisphere summer.',
+    autumn: 'Optimizes Arctic sea ice and India monsoon trade-off (Visioni et al. 2020).',
   };
   const exact: Record<SeasonChoice, string> = {
     annual: 'Ice +2; burden +1.',
     spring: 'Ice +1; rain -2.',
-    autumn: 'Ice +8; rain +2.',
+    autumn: 'Ice +8; rain +2 (Visioni et al. 2020).',
   };
   return lockedEffectText(40, basic[choice], exact[choice], knowledge);
 }
@@ -418,14 +421,14 @@ function seasonSubtitle(choice: SeasonChoice, knowledge: number, paused: boolean
 function locationSubtitle(choice: LocationChoice, knowledge: number, paused: boolean): string {
   if (paused) return 'No injection this decade.';
   const basic: Record<LocationChoice, string> = {
-    tropical: 'Global spread, balanced forcing.',
-    subtropical: 'Middle strategy between global control and polar targeting.',
-    polar: 'Strong ice rescue, but rainfall redistribution pressure.',
+    tropical: 'Equatorial injection. Global aerosol spread with balanced forcing.',
+    subtropical: 'Intermediate strategy balancing global and polar cooling.',
+    polar: 'Strong high-latitude ice rescue, but shifts ITCZ rainfall (Duffey et al. 2023).',
   };
   const exact: Record<LocationChoice, string> = {
     tropical: 'Rain +1.',
     subtropical: 'Ice +3; rain -1.',
-    polar: 'Ice +12; rain -6; food -3.',
+    polar: 'Ice +12; rain -6; food -3 (Duffey et al. 2023).',
   };
   return lockedEffectText(55, basic[choice], exact[choice], knowledge);
 }
@@ -434,15 +437,15 @@ function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boo
   if (paused) return 'No injection this decade.';
   if (choice === 'future' && !futureUnlocked) return 'Locked: needs ≥80% knowledge and year ≥2090.';
   const basic: Record<ParticleChoice, string> = {
-    sulfate: 'Known baseline. Lower uncertainty; studied side effects.',
-    caco3: 'Solid alternative. Partly known, chemistry uncertain.',
-    alumina: 'Potential solid particle option with high optical performance.',
-    future: 'Unlocked by high research. Highly efficient.',
+    sulfate: 'Baseline material. Known cooling, but causes stratospheric heating (Simpson et al. 2019).',
+    caco3: 'Solid calcite. Neutralizes stratospheric acids, reducing crop penalties (Vattioni et al. 2025).',
+    alumina: 'High scattering performance, but chlorine surface chemistry is unconstrained (Vattioni et al. 2023).',
+    future: 'Advanced engineered particle. Maximum efficiency with minimal aerosol burden.',
   };
   const exact: Record<ParticleChoice, string> = {
     sulfate: 'Rain -1; burden +3.',
-    caco3: 'Food +2; burden +3.',
-    alumina: 'Knowledge +2; burden +3.',
+    caco3: 'Food +2; burden +3 (Vattioni et al. 2025).',
+    alumina: 'Knowledge +2; burden +3 (Vattioni et al. 2023).',
     future: 'Knowledge +3; food +5; rain +2; burden +2.',
   };
   return lockedEffectText(70, basic[choice], exact[choice], knowledge);
@@ -450,10 +453,10 @@ function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boo
 
 function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
   const basic: Record<ResearchChoice, string> = {
-    none: 'Save points, but uncertainty remains.',
-    lab: 'Research material performance and chemistry.',
-    monitoring: 'Improve observation, trust and infrastructure.',
-    adaptation: 'Protect affected regions and food systems.',
+    none: 'Save points, but leaves systems vulnerable to uncertainty.',
+    lab: 'Perform particle microphysics & chemistry research.',
+    monitoring: 'Improve observations, public trust and infrastructure resilience.',
+    adaptation: 'Fund regional adaptation & agricultural compensation.',
   };
   const exact: Record<ResearchChoice, string> = {
     none: 'No direct effect. Saves capacity this decade.',
@@ -462,6 +465,89 @@ function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
     adaptation: 'Trust +12; food +10; rain +6.',
   };
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
+}
+
+function 3DEarth({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
+  const earthRef = useRef<THREE.Mesh>(null!);
+  const aerosolRef = useRef<THREE.Mesh>(null!);
+  const iceCapRef = useRef<THREE.Mesh>(null!);
+
+  useFrame((_, delta) => {
+    if (earthRef.current) earthRef.current.rotation.y += delta * 0.1;
+    if (aerosolRef.current) aerosolRef.current.rotation.y += delta * 0.15;
+    if (iceCapRef.current) iceCapRef.current.rotation.y += delta * 0.1;
+  });
+
+  const earthColor = useMemo(() => {
+    if (temperature >= 2.2) return '#b91c1c';
+    if (temperature >= 1.7) return '#d97706';
+    if (temperature <= 0.9) return '#155e75';
+    return '#1e3a8a';
+  }, [temperature]);
+
+  const iceScale = Math.max(0.1, ice / 100);
+  const aerosolOpacity = Math.min(0.85, aerosolBurden / 100);
+
+  return (
+    <group position={[2, 0, 0]}>
+      {/* Earth Body */}
+      <mesh ref={earthRef}>
+        <sphereGeometry args={[1.5, 32, 32]} />
+        <meshStandardMaterial color={earthColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+
+      {/* Arctic & Antarctic Ice Caps */}
+      {ice > 0 && (
+        <mesh ref={iceCapRef} scale={[1.51, 1.51 * iceScale, 1.51]}>
+          <sphereGeometry args={[1, 32, 16]} />
+          <meshStandardMaterial color="#f8fafc" transparent opacity={0.8} />
+        </mesh>
+      )}
+
+      {/* Stratospheric Aerosol Shield */}
+      {aerosolBurden > 0 && (
+        <mesh ref={aerosolRef}>
+          <sphereGeometry args={[1.8, 32, 32]} />
+          <meshStandardMaterial color="#fef08a" transparent opacity={aerosolOpacity} depthWrite={false} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function 3DSun() {
+  const sunRef = useRef<THREE.Mesh>(null!);
+
+  useFrame((_, delta) => {
+    if (sunRef.current) sunRef.current.rotation.y += delta * 0.05;
+  });
+
+  return (
+    <group position={[-3.5, 0, 0]}>
+      <mesh ref={sunRef}>
+        <sphereGeometry args={[1.1, 32, 32]} />
+        <meshBasicMaterial color="#fde047" />
+      </mesh>
+      <pointLight intensity={3} distance={15} color="#fef08a" />
+    </group>
+  );
+}
+
+function SolarSystem3DScene({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
+  return (
+    <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl relative">
+      <Canvas camera={{ position: [0, 0, 6.5], fov: 50 }}>
+        <ambientLight intensity={0.2} />
+        <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+        <3DSun />
+        <3DEarth temperature={temperature} ice={ice} aerosolBurden={aerosolBurden} />
+        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+      </Canvas>
+      <div className="absolute bottom-2 left-3 text-[10px] uppercase font-bold text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800 backdrop-blur-md">
+        Interactive 3D Planetary Simulation
+      </div>
+    </div>
+  );
 }
 
 function InfoCard({ children }: { children: React.ReactNode }) {
@@ -476,11 +562,11 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-950/60 px-3 py-1 text-sm text-blue-200">
-                <Globe2 size={16} /> Interactive SAI governance game
+                <Globe2 size={16} /> Research-Backed SAI Governance Challenge
               </div>
               <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white">The SAI Governance Challenge</h1>
               <p className="mt-4 max-w-3xl text-slate-300 md:text-lg">
-                You are the climate council from 2030 to 2130. Manage global temperature, monsoon rainfall, food security, public trust, and scientific knowledge across ten decades.
+                You are the global climate council from 2030 to 2130. Balance temperature cooling against monsoon disruptions, direct sunlight reductions on agriculture, and public trust.
               </p>
             </div>
             <button
@@ -494,16 +580,16 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <InfoCard>
-            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><BookOpen className="text-blue-400" /> Theory behind the game</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><BookOpen className="text-blue-400" /> Research-Grounded Mechanics</h2>
             <p className="text-slate-300 leading-relaxed">
-              Stratospheric aerosol injection (SAI) scatters incoming sunlight to reduce surface warming. It lowers average temperatures, but requires careful governance of regional trade-offs.
+              Every choice directly models empirical scientific literature: from Visioni et al. (seasonal injection) to Proctor et al. (agricultural dimming penalties) and Parker & Irvine (termination shock).
             </p>
           </InfoCard>
 
           <InfoCard>
             <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game Rules & Scientific Mastery</h2>
             <p className="text-slate-300 leading-relaxed">
-              Survive 10 decades until 2130. You receive **7 GP** each decade. Reaching **100% Knowledge** requires sustained laboratory testing across the century and unlocks total theoretical insight in decade reports!
+              Survive 10 decades until 2130. You receive **7 GP** each decade. **If any metric collapses to 0%, the game immediately ends!** Test choices to build Scientific Mastery!
             </p>
           </InfoCard>
         </div>
@@ -587,7 +673,6 @@ function ChoiceCard({
   );
 }
 
-// AI-STYLE ILLUSTRATED EVENT BANNER COMPONENT
 function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'drought' | 'ecosystem' | 'none' }) {
   if (!eventType || eventType === 'none') return null;
 
@@ -617,17 +702,17 @@ function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'dr
 
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-1">
-            <AlertTriangle className="w-3.5 h-3.5" /> Planetary Hazard Triggered
+            <AlertTriangle className="w-3.5 h-3.5" /> Empirical Hazard Event
           </div>
           <h4 className="text-base font-black text-white">
-            {eventType === 'chemistry' && 'Stratospheric Microphysical Anomaly'}
-            {eventType === 'drought' && 'Monsoon Shift & Drought Pressure'}
-            {eventType === 'ecosystem' && 'Public Health & Ecosystem Scrutiny'}
+            {eventType === 'chemistry' && 'Stratospheric Microphysical Anomaly (Vattioni et al. 2023)'}
+            {eventType === 'drought' && 'Monsoon Shift & Regional Drought (Duffey et al. 2023)'}
+            {eventType === 'ecosystem' && 'Public Health & Ecosystem Scrutiny (Tracy et al. 2022)'}
           </h4>
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-            {eventType === 'chemistry' && 'Laboratory reaction assumptions faced unforeseen chlorine chemistry in the stratosphere (Vattioni et al. 2023).'}
-            {eventType === 'drought' && 'Targeting polar latitudes caused a lower-latitude shift in precipitation cycles (Duffey et al. 2023).'}
-            {eventType === 'ecosystem' && 'Localized crop and regional health reports created public scrutiny and trust fluctuations (Tracy et al. 2022).'}
+            {eventType === 'chemistry' && 'Laboratory reaction assumptions faced unforeseen chlorine chemistry in the stratosphere.'}
+            {eventType === 'drought' && 'Targeting polar latitudes caused a lower-latitude shift in precipitation cycles, stressing regional monsoons.'}
+            {eventType === 'ecosystem' && 'Localized crop and regional health reports created public scrutiny and trust fluctuations.'}
           </p>
         </div>
       </div>
@@ -635,7 +720,6 @@ function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'dr
   );
 }
 
-{/* --- DYNAMIC VISUAL ENVIRONMENT & ATMOSPHERIC CANVAS --- */}
 function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indicators; target: TargetChoice; particle: ParticleChoice }) {
   const status = earthStatus(indicators);
   const burdenPercent = indicators.aerosolBurden;
@@ -647,35 +731,9 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl min-h-[420px] flex flex-col justify-between p-6">
-      
-      {/* Stratospheric Haze Layer */}
-      <div 
-        className="absolute inset-x-0 top-0 h-2/5 transition-all duration-1000 z-10 pointer-events-none flex flex-col items-center justify-start pt-3"
-        style={{
-          background: `linear-gradient(to bottom, rgba(217, 119, 6, ${burdenPercent / 100}), rgba(15, 23, 42, 0))`
-        }}
-      >
-        <div className="absolute inset-0 opacity-50 overflow-hidden">
-          <div className="absolute top-2 left-1/4 w-3 h-3 bg-amber-200 rounded-full blur-[2px] animate-ping" />
-          <div className="absolute top-8 left-2/3 w-4 h-4 bg-cyan-200 rounded-full blur-[2px] animate-pulse" />
-          <div className="absolute top-4 left-1/2 w-3 h-3 bg-slate-100 rounded-full blur-[2px] animate-ping" />
-        </div>
-        <span className="text-xs uppercase tracking-widest text-amber-200/90 font-bold bg-slate-950/80 px-4 py-1.5 rounded-full border border-amber-500/40 backdrop-blur-md shadow-lg">
-          Stratospheric Aerosol Burden: {burdenPercent}% ({particleMeta[particle].label})
-        </span>
-      </div>
+      <SolarSystem3DScene temperature={tempAnomaly} ice={indicators.ice} aerosolBurden={burdenPercent} />
 
-      {/* Dynamic Solar Sky Overlay */}
-      <div 
-        className="absolute inset-0 transition-all duration-1000 -z-0 pointer-events-none"
-        style={{
-          backgroundColor: tempAnomaly > 2.0 ? 'rgba(185, 28, 28, 0.25)' : 'rgba(14, 116, 144, 0.15)',
-          filter: `brightness(${Math.max(0.35, solarIrradiance / 100)})`
-        }}
-      />
-
-      {/* Header Panel: Sun & System Status */}
-      <div className="relative z-20 flex justify-between items-start gap-4">
+      <div className="relative z-20 flex justify-between items-start gap-4 mt-4">
         <div className="flex items-center gap-3 bg-slate-950/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-xl">
           <div className="relative flex items-center justify-center">
             <Sun className={`w-8 h-8 ${solarIrradiance < 60 ? 'text-amber-600' : 'text-amber-400'} animate-spin-slow`} />
@@ -696,7 +754,6 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
         </div>
       </div>
 
-      {/* Weather & Rainfall Dynamic Layer */}
       <div className="relative z-20 my-2 pointer-events-none">
         <div className="flex items-center justify-between bg-slate-950/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-800 mb-2 shadow-lg">
           <div className="flex items-center gap-2">
@@ -708,7 +765,6 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
           </span>
         </div>
 
-        {/* Dynamic Weather Renderer */}
         <div className="h-20 w-full relative overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-950/60 shadow-inner flex items-center justify-center">
           {rainPercent >= 40 ? (
             <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60" xmlns="http://www.w3.org/2000/svg">
@@ -722,13 +778,12 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
             </svg>
           ) : (
             <div className="flex items-center gap-2 text-amber-400/90 font-bold text-xs uppercase tracking-widest bg-amber-950/40 px-4 py-2 rounded-xl border border-amber-800/50">
-              ⚠️ Severe Hydrological Deficit — Drought Stress Region
+              ⚠️ Severe Hydrological Deficit — Monsoon Disruption (Haywood et al. 2013)
             </div>
           )}
         </div>
       </div>
 
-      {/* Surface Agriculture Field Canvas */}
       <div className="relative z-20 bg-slate-950/90 border border-slate-800 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className={`p-3 rounded-2xl border transition-all duration-500 ${foodPercent >= 70 ? 'bg-emerald-950/80 border-emerald-700 text-emerald-400' : foodPercent >= 40 ? 'bg-amber-950/80 border-amber-700 text-amber-400' : 'bg-red-950/80 border-red-700 text-red-400'}`}>
@@ -736,16 +791,15 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
           </div>
           <div>
             <div className="text-sm font-black text-slate-100 flex items-center gap-2">
-              Global Agricultural & Crop Health
+              Global Agricultural & Crop Health ({foodPercent}%)
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${foodPercent >= 70 ? 'bg-emerald-900/60 text-emerald-300' : foodPercent >= 40 ? 'bg-amber-900/60 text-amber-300' : 'bg-red-900/60 text-red-300'}`}>
-                {foodPercent >= 70 ? 'Lush & Healthy' : foodPercent >= 40 ? 'Moderate Yield' : 'Wilted / Drought'}
+                {foodPercent >= 70 ? 'Lush & Healthy' : foodPercent >= 40 ? 'Moderate Yield' : 'Wilted / Photosynthesis Dimmed'}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400">Directly affected by sunlight irradiance dimming and rain cycles.</div>
+            <div className="text-[11px] text-slate-400">Impacted by atmospheric dimming (Proctor et al. 2018) and monsoon precipitation.</div>
           </div>
         </div>
 
-        {/* Dynamic Plant SVG Canvas Graphic */}
         <div className="w-full md:w-64 h-16 rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden relative flex items-end justify-around px-3 pb-1">
           {foodPercent >= 70 ? (
             <svg className="w-full h-12 text-emerald-400" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="2">
@@ -777,27 +831,27 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
   const items = [
     {
       threshold: 30,
-      title: '30% Knowledge: Basic Hydroclimate Insights',
-      text: 'Unlocks target numerical parameter changes and basic monsoon trade-off reports.',
+      title: '30% Knowledge: Hydroclimate Insights (Cohen et al. 2025)',
+      text: 'Unlocks target parameter changes and regional monsoon trade-off analysis.',
     },
     {
       threshold: 60,
-      title: '60% Knowledge: Microphysics & Material Chemistry',
-      text: 'Unlocks solid particle chemistry, ozone feedback details, and particle numerical insights.',
+      title: '60% Knowledge: Microphysics & Ozone Chemistry (Vattioni et al. 2023, 2025)',
+      text: 'Unlocks solid particle chemistry, stratospheric heating, and ozone feedback insights.',
     },
     {
       threshold: 80,
-      title: '80% Knowledge: Future Particle Unlocked',
+      title: '80% Knowledge: Engineered Aerosols Unlocked',
       text: futureUnlocked
-        ? 'Future engineered particles are unlocked for high-efficiency cooling.'
+        ? 'Future engineered particles are unlocked for high-efficiency deployment.'
         : 'Future engineered particles unlock once year >= 2090.',
     },
     {
       threshold: 100,
-      title: '100% Knowledge: Total Theoretical Precision',
+      title: '100% Knowledge: Complete Scientific Precision',
       text: knowledge >= 100 
-        ? 'FULL MASTERY ACHIEVED: Perfect predictive insights unlocked in all decade reports!'
-        : 'Requires sustained Laboratory Testing across almost all 10 decades to achieve.',
+        ? 'FULL MASTERY ACHIEVED: Perfect predictive insights unlocked across all decade reports!'
+        : 'Requires sustained testing across decades to achieve.',
     },
   ];
 
@@ -805,7 +859,7 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
     <InfoCard>
       <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-white"><Brain className="text-purple-400" /> Scientific Knowledge Tracker</h2>
       <div className="mb-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 text-sm text-purple-100">
-        Scientific Knowledge: <b>{knowledge}% / 100%</b>. Perform Laboratory Testing (+8%/decade) to reach 100% Scientific Mastery by the final decades!
+        Scientific Knowledge: <b>{knowledge}% / 100%</b>
       </div>
       <div className="space-y-3 text-sm">
         {items.map((item) => {
@@ -816,7 +870,7 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
                 <b className={unlocked ? 'text-white' : 'text-slate-500'}>{item.title}</b>
                 <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-xs">{item.threshold}%</span>
               </div>
-              <div className="mt-2">{unlocked ? item.text : 'Locked: perform Laboratory Testing to advance knowledge.'}</div>
+              <div className="mt-2">{unlocked ? item.text : 'Locked: advance scientific knowledge to unlock.'}</div>
             </div>
           );
         })}
@@ -881,7 +935,7 @@ export function App() {
       next.trust += 2;
       next.aerosolBurden -= 15;
       next.infrastructure += 2;
-      reportText = 'No SAI deployed this decade. Direct side effects avoided, but baseline warming increased.';
+      reportText = 'No SAI deployed this decade. Direct aerosol side effects avoided, but baseline global warming continued.';
     } else {
       let desiredTemp = targetTemperature(target, withoutSAI);
       next.temperature = Math.max(0.4, desiredTemp);
@@ -958,14 +1012,14 @@ export function App() {
         next.knowledge += 3;
         next.trust -= 8;
         next.rain -= 4;
-        event = 'Material chemistry surprise: laboratory assumptions faced stratospheric chemistry uncertainties. Knowledge increased, but public trust dipped slightly (Vattioni et al. 2023).';
+        event = 'Material chemistry surprise: laboratory assumptions faced stratospheric chemistry uncertainties (Vattioni et al. 2023).';
         reportTitle = 'Decade Report: Material Surprises';
         eventType = 'chemistry';
       } else if (location === 'polar' && eventRoll < 0.70) {
         next.rain -= 6;
         next.food -= 4;
         next.trust -= 5;
-        event = 'Regional hydroclimate shift: polar targeting effectively cooled high latitudes but shifted lower-latitude rainfall (Duffey et al. 2023).';
+        event = 'Regional hydroclimate shift: polar targeting cooled high latitudes but shifted lower-latitude rainfall (Duffey et al. 2023).';
         reportTitle = 'Decade Report: Regional Hydroclimate Shift';
         eventType = 'drought';
       } else {
@@ -1029,15 +1083,48 @@ export function App() {
   if (terminationShock) {
     return (
       <div className="min-h-screen bg-slate-950 p-6 text-slate-200 flex items-center justify-center font-sans">
-        <div className="max-w-3xl rounded-3xl border border-red-800 bg-red-950/30 p-8 text-center shadow-2xl shadow-red-950/40">
-          <AlertOctagon className="mx-auto mb-5 text-red-400" size={88} />
-          <h1 className="text-5xl font-black text-white">Termination Shock</h1>
-          <p className="mt-5 text-left text-lg leading-relaxed text-slate-300">
-            The SAI program was abruptly interrupted. Unmasked greenhouse warming occurred rapidly, triggering catastrophic system collapse (Parker & Irvine 2018).
-          </p>
-          <button onClick={resetGame} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-red-700 px-6 py-4 font-bold text-white hover:bg-red-600">
-            <RefreshCcw size={18} /> Restart Game
-          </button>
+        <div className="max-w-4xl rounded-3xl border border-red-800 bg-red-950/40 p-8 shadow-2xl shadow-red-950/50 space-y-6">
+          <div className="flex flex-col items-center text-center">
+            <AlertOctagon className="mb-3 text-red-500 animate-pulse" size={80} />
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-500/40 bg-red-950/80 px-3 py-1 text-xs text-red-200 font-bold uppercase tracking-widest mb-2">
+              CRITICAL SYSTEM FAILURE
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-white">Termination Shock Triggered</h1>
+            <p className="mt-2 text-sm text-red-300 font-mono">Reference Paper: Parker & Irvine (2018) — "The Risk of Termination Shock From Solar Geoengineering"</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 text-left text-sm">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 space-y-2">
+              <h3 className="font-black text-base text-red-400 flex items-center gap-2">
+                ⚡ Why Did This Happen?
+              </h3>
+              <p className="text-slate-300 leading-relaxed text-xs">
+                You abruptly suspended active Solar Radiation Management after masking warming for multiple decades. Because stratospheric aerosols decay out of the atmosphere within 1 to 2 years while underlying greenhouse gas ($GHG$) concentrations remain elevated, the artificial cooling shield vanished rapidly.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 space-y-2">
+              <h3 className="font-black text-base text-amber-400 flex items-center gap-2">
+                💥 What Does This Mean?
+              </h3>
+              <p className="text-slate-300 leading-relaxed text-xs">
+                Global temperatures surged rapidly back toward unmitigated warming baseline levels. This rate of warming occurs up to **10 to 20 times faster** than natural climate change, overwhelming biological ecosystems, agricultural crop resilience, and emergency infrastructure.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-purple-800/60 bg-purple-950/30 p-5 text-left text-xs space-y-2">
+            <b className="text-purple-300 text-sm block">🔬 Governance Takeaway (Parker & Irvine 2018):</b>
+            <p className="text-slate-300 leading-relaxed">
+              Termination shock is not an inherent flaw in aerosol physics, but a <b>failure of governance continuity</b>. To avoid termination shock, solar geoengineering must either be maintained continuously alongside aggressive decarbonization or phased down very slowly over many decades.
+            </p>
+          </div>
+
+          <div className="flex justify-center pt-2">
+            <button onClick={resetGame} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-8 py-4 font-black text-white hover:bg-red-500 shadow-xl transition">
+              <RefreshCcw size={18} /> Restart Challenge
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1051,7 +1138,7 @@ export function App() {
           <h1 className="text-5xl font-black text-white">System Collapse</h1>
           <p className="mt-4 text-2xl font-bold text-red-400">{attributeCollapseReason} reached 0%</p>
           <p className="mt-4 text-slate-300">
-            A core planetary or human resilience metric dropped to zero, breaking system stability. Use Monitoring or Compensation & Adaptation actions to keep Trust, Food, and Rainfall well above danger levels.
+            A vital planetary or social resilience metric dropped to zero, triggering planetary instability. Use Monitoring or Compensation & Adaptation support actions to shield vulnerable metrics!
           </p>
           <button onClick={resetGame} className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-bold text-white hover:bg-blue-500">
             <RefreshCcw size={18} /> Try Again
@@ -1095,7 +1182,6 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-200 font-sans">
-      {/* HIGHLY ENGAGING DECADE OVERVIEW MODAL */}
       {report && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900/95 p-6 md:p-8 shadow-2xl">
@@ -1113,7 +1199,6 @@ export function App() {
 
             <p className="mb-4 text-slate-300 text-base leading-relaxed">{report.text}</p>
 
-            {/* AI Illustrated Event Graphic inside Decade Overview */}
             <EventGraphicIllustration eventType={report.eventType} />
 
             <div className="my-6">
@@ -1144,7 +1229,7 @@ export function App() {
 
             <InfoCard>
               <h3 className="mb-3 text-lg font-black text-white flex items-center gap-2">
-                <Brain className="text-purple-400" /> Knowledge-Based Executive Analysis
+                <Brain className="text-purple-400" /> Research-Backed Executive Analysis
               </h3>
               <ul className="space-y-2.5 text-sm text-slate-300">
                 {strategyExplanation(report.choices, report.current.knowledge).map((note, idx) => (
@@ -1172,7 +1257,6 @@ export function App() {
           </div>
         </div>
 
-        {/* Visual Atmospheric Canvas */}
         <DynamicEarthCanvas indicators={indicators} target={target} particle={particle} />
         
         {metricCards}
@@ -1224,9 +1308,9 @@ export function App() {
                   <h3 className="mb-3 flex items-center gap-2 font-bold text-slate-300"><Microscope size={16} /> Support Action</h3>
                   <div className="space-y-2">
                     <ChoiceCard selected={research === 'none'} title="No support action" subtitle={supportSubtitle('none', indicators.knowledge)} cost={researchMeta.none.cost} onClick={() => setResearch('none')} />
-                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing (+Knowledge)" subtitle={supportSubtitle('lab', indicators.knowledge)} cost={researchMeta.lab.cost} tone="purple" onClick={() => setResearch('lab')} />
-                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data (+Trust & Infra)" subtitle={supportSubtitle('monitoring', indicators.knowledge)} cost={researchMeta.monitoring.cost} tone="emerald" onClick={() => setResearch('monitoring')} />
-                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation (+Food & Rain)" subtitle={supportSubtitle('adaptation', indicators.knowledge)} cost={researchMeta.adaptation.cost} tone="amber" onClick={() => setResearch('adaptation')} />
+                    <ChoiceCard selected={research === 'lab'} title="Laboratory particle testing" subtitle={supportSubtitle('lab', indicators.knowledge)} cost={researchMeta.lab.cost} tone="purple" onClick={() => setResearch('lab')} />
+                    <ChoiceCard selected={research === 'monitoring'} title="Monitoring and open data" subtitle={supportSubtitle('monitoring', indicators.knowledge)} cost={researchMeta.monitoring.cost} tone="emerald" onClick={() => setResearch('monitoring')} />
+                    <ChoiceCard selected={research === 'adaptation'} title="Compensation and adaptation" subtitle={supportSubtitle('adaptation', indicators.knowledge)} cost={researchMeta.adaptation.cost} tone="amber" onClick={() => setResearch('adaptation')} />
                   </div>
                 </section>
               </div>
