@@ -467,67 +467,84 @@ function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
 }
 
-function EarthSunVisualizer({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
-  const earthGradient = useMemo(() => {
-    if (temperature >= 2.2) return 'radial-gradient(circle at 35% 35%, #f87171, #ef4444, #7f1d1d)';
-    if (temperature >= 1.7) return 'radial-gradient(circle at 35% 35%, #fbbf24, #d97706, #78350f)';
-    if (temperature <= 0.9) return 'radial-gradient(circle at 35% 35%, #38bdf8, #0284c7, #0c4a6e)';
-    return 'radial-gradient(circle at 35% 35%, #60a5fa, #2563eb, #1e3a8a)';
-  }, [temperature]);
+function visualTier(value: number): { label: string; chip: string; bar: string; text: string } {
+  if (value <= 0) return { label: 'Collapsed', chip: 'bg-red-950 text-red-200 border-red-700', bar: 'bg-red-500', text: 'text-red-300' };
+  if (value < 25) return { label: 'Critical', chip: 'bg-red-950/80 text-red-200 border-red-700', bar: 'bg-red-500', text: 'text-red-300' };
+  if (value < 45) return { label: 'Severe stress', chip: 'bg-orange-950/80 text-orange-200 border-orange-700', bar: 'bg-orange-500', text: 'text-orange-300' };
+  if (value < 70) return { label: 'Stressed', chip: 'bg-amber-950/80 text-amber-200 border-amber-700', bar: 'bg-amber-400', text: 'text-amber-300' };
+  return { label: 'Stable', chip: 'bg-emerald-950/80 text-emerald-200 border-emerald-700', bar: 'bg-emerald-400', text: 'text-emerald-300' };
+}
 
-  const iceOpacity = Math.max(0.1, ice / 100);
-  const aerosolOpacity = Math.min(0.8, aerosolBurden / 100);
+function EarthSunVisualizer({ indicators, target }: { indicators: Indicators; target: TargetChoice }) {
+  const temperature = indicators.temperature;
+  const ice = indicators.ice;
+  const aerosolBurden = indicators.aerosolBurden;
+  const solarIrradiance = Math.max(30, Math.round(100 - aerosolBurden * 0.3 - (target === 'aggressive' ? 6 : target === 'emergency' ? 12 : 0)));
+
+  const earthGradient = useMemo(() => {
+    if (indicators.ice <= 0 || indicators.food <= 0 || indicators.rain <= 0 || indicators.trust <= 0) return 'radial-gradient(circle at 35% 35%, #fca5a5, #dc2626, #450a0a)';
+    if (temperature >= 2.5) return 'radial-gradient(circle at 35% 35%, #fed7aa, #f97316, #7c2d12)';
+    if (temperature >= 1.8) return 'radial-gradient(circle at 35% 35%, #fde68a, #f59e0b, #78350f)';
+    if (temperature <= 0.9) return 'radial-gradient(circle at 35% 35%, #bae6fd, #38bdf8, #0c4a6e)';
+    return 'radial-gradient(circle at 35% 35%, #7dd3fc, #2563eb, #1e3a8a)';
+  }, [temperature, indicators.ice, indicators.food, indicators.rain, indicators.trust]);
+
+  const iceCapHeight = Math.max(2, Math.round(4 + ice * 0.18));
+  const aerosolOpacity = Math.min(0.85, aerosolBurden / 100);
+  const sunlightOpacity = Math.max(0.15, solarIrradiance / 100);
+  const sunScale = Math.max(0.68, solarIrradiance / 100);
+  const hazeLines = Math.min(10, Math.max(0, Math.round(aerosolBurden / 10)));
 
   return (
-    <div className="w-full h-64 rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-2xl relative flex items-center justify-around overflow-hidden">
-      {/* Background Starfield */}
-      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
+    <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-4 shadow-2xl">
+      <div className="absolute inset-0 opacity-35 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:18px_18px]" />
 
-      {/* Sun */}
-      <div className="relative flex items-center justify-center">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-500 shadow-[0_0_50px_rgba(251,191,36,0.8)] animate-pulse" />
-        <div className="absolute text-[10px] uppercase font-bold text-amber-200 -bottom-6">Sun</div>
-      </div>
-
-      {/* Solar Rays Indicator */}
-      <div className="flex-1 h-0.5 border-t-2 border-dashed border-amber-400/40 mx-4 relative">
-        {aerosolBurden > 0 && (
-          <div className="absolute inset-0 bg-amber-200/30 blur-xs animate-pulse" />
-        )}
-      </div>
-
-      {/* Earth */}
-      <div className="relative flex items-center justify-center">
-        {/* Aerosol Shield Halo */}
-        {aerosolBurden > 0 && (
-          <div
-            className="absolute -inset-4 rounded-full border-2 border-amber-300/60 bg-amber-400/20 blur-sm transition-all duration-700"
-            style={{ opacity: aerosolOpacity }}
-          />
-        )}
-
-        {/* Earth Sphere */}
+      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-center">
         <div
-          className="w-28 h-28 rounded-full shadow-2xl transition-all duration-700 relative overflow-hidden"
-          style={{ background: earthGradient }}
-        >
-          {/* North Ice Cap */}
-          {ice > 0 && (
-            <div
-              className="absolute top-0 inset-x-2 h-4 bg-slate-100 rounded-b-full transition-all duration-700"
-              style={{ opacity: iceOpacity }}
-            />
-          )}
+          className="rounded-full bg-gradient-to-br from-amber-100 via-amber-400 to-yellow-600 shadow-[0_0_55px_rgba(251,191,36,0.65)] transition-all duration-700"
+          style={{ width: 92 * sunScale, height: 92 * sunScale, opacity: sunlightOpacity }}
+        />
+        <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-amber-200">Sun</div>
+        <div className="mt-1 text-[10px] text-slate-400">{solarIrradiance}% light</div>
+      </div>
 
-          {/* South Ice Cap */}
-          {ice > 0 && (
+      <div className="absolute left-32 right-32 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-amber-300/15">
+        <div className="h-full rounded-full bg-amber-300 transition-all duration-700" style={{ width: `${solarIrradiance}%`, opacity: sunlightOpacity }} />
+      </div>
+
+      <div className="absolute inset-y-10 left-1/3 right-1/3 flex justify-center gap-2 pointer-events-none">
+        {[...Array(hazeLines)].map((_, i) => (
+          <div
+            key={i}
+            className="h-full w-1 rounded-full bg-amber-200/30 blur-[1px]"
+            style={{ opacity: aerosolOpacity * 0.75, transform: `translateX(${(i - hazeLines / 2) * 10}px) rotate(-8deg)` }}
+          />
+        ))}
+      </div>
+
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-center">
+        <div className="relative flex h-36 w-36 items-center justify-center">
+          {aerosolBurden > 0 && (
             <div
-              className="absolute bottom-0 inset-x-2 h-4 bg-slate-100 rounded-t-full transition-all duration-700"
-              style={{ opacity: iceOpacity }}
+              className="absolute rounded-full border-4 border-amber-300/60 bg-amber-300/10 blur-[1px] transition-all duration-700"
+              style={{ inset: `${Math.max(-22, -8 - aerosolBurden / 4)}px`, opacity: aerosolOpacity }}
             />
           )}
+          <div className="relative h-32 w-32 overflow-hidden rounded-full shadow-2xl ring-2 ring-slate-700 transition-all duration-700" style={{ background: earthGradient }}>
+            <div className="absolute left-5 top-7 h-8 w-12 rounded-full bg-emerald-400/35 blur-[1px]" />
+            <div className="absolute right-6 top-12 h-10 w-8 rounded-full bg-emerald-300/30 blur-[1px]" />
+            {ice > 0 && (
+              <>
+                <div className="absolute inset-x-3 top-0 rounded-b-full bg-slate-100 transition-all duration-700" style={{ height: iceCapHeight, opacity: Math.max(0.18, ice / 100) }} />
+                <div className="absolute inset-x-4 bottom-0 rounded-t-full bg-slate-100 transition-all duration-700" style={{ height: Math.max(2, iceCapHeight - 2), opacity: Math.max(0.16, ice / 100) }} />
+              </>
+            )}
+            {temperature >= 2.5 && <div className="absolute inset-0 bg-red-500/20 animate-pulse" />}
+            {temperature <= 0.9 && <div className="absolute inset-0 bg-cyan-100/15" />}
+          </div>
         </div>
-        <div className="absolute text-[10px] uppercase font-bold text-cyan-200 -bottom-6">Earth</div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-cyan-200">Earth</div>
+        <div className="mt-1 text-[10px] text-slate-400">Ice {ice}% · Burden {aerosolBurden}%</div>
       </div>
     </div>
   );
@@ -778,107 +795,116 @@ function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'dr
 
 function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indicators; target: TargetChoice; particle: ParticleChoice }) {
   const status = earthStatus(indicators);
-  const burdenPercent = indicators.aerosolBurden;
-  const rainPercent = indicators.rain;
-  const foodPercent = indicators.food;
-  const tempAnomaly = indicators.temperature;
-
-  const solarIrradiance = Math.max(30, Math.round(100 - burdenPercent * 0.3 - (target === 'aggressive' ? 6 : target === 'emergency' ? 12 : 0)));
+  const solarIrradiance = Math.max(30, Math.round(100 - indicators.aerosolBurden * 0.3 - (target === 'aggressive' ? 6 : target === 'emergency' ? 12 : 0)));
+  const rainTone = visualTier(indicators.rain);
+  const foodTone = visualTier(indicators.food);
+  const iceTone = visualTier(indicators.ice);
+  const trustTone = visualTier(indicators.trust);
+  const burdenLabel = indicators.aerosolBurden > 75 ? 'High side-effect pressure' : indicators.aerosolBurden > 55 ? 'Elevated burden' : indicators.aerosolBurden > 25 ? 'Managed aerosol layer' : 'Low burden';
+  const rainDrops = indicators.rain >= 70 ? 34 : indicators.rain >= 45 ? 22 : indicators.rain >= 25 ? 12 : 4;
+  const cropCount = indicators.food >= 70 ? 9 : indicators.food >= 45 ? 6 : indicators.food >= 25 ? 4 : 2;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl min-h-[420px] flex flex-col justify-between p-6">
-      <EarthSunVisualizer temperature={tempAnomaly} ice={indicators.ice} aerosolBurden={burdenPercent} />
+    <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl">
+      <EarthSunVisualizer indicators={indicators} target={target} />
 
-      <div className="relative z-20 flex justify-between items-start gap-4 mt-4">
-        <div className="flex items-center gap-3 bg-slate-950/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-xl">
-          <div className="relative flex items-center justify-center">
-            <Sun className={`w-8 h-8 ${solarIrradiance < 60 ? 'text-amber-600' : 'text-amber-400'} animate-spin-slow`} />
-            <div className="absolute inset-0 rounded-full blur-sm bg-amber-400/30 animate-pulse" />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Solar Irradiance</p>
-            <p className="text-base font-black text-slate-100">{solarIrradiance}% Surface Normal</p>
-          </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><Sun size={15} /> Surface sunlight</div>
+          <div className="mt-2 text-2xl font-black text-white">{solarIrradiance}%</div>
+          <div className="mt-2 h-2 rounded-full bg-slate-800"><div className="h-2 rounded-full bg-amber-300" style={{ width: `${solarIrradiance}%` }} /></div>
+          <p className="mt-2 text-xs text-slate-400">Falls when aerosol burden or cooling ambition increases.</p>
         </div>
-
-        <div className="flex items-center gap-3 bg-slate-950/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-xl">
-          <span className="text-3xl">{status.emoji}</span>
-          <div>
-            <p className="text-sm font-black text-slate-100">{status.label}</p>
-            <p className="text-[11px] text-slate-400 max-w-[220px] leading-tight">{status.detail}</p>
-          </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><Gauge size={15} /> Aerosol burden</div>
+          <div className="mt-2 text-2xl font-black text-white">{indicators.aerosolBurden}%</div>
+          <div className="mt-2 h-2 rounded-full bg-slate-800"><div className={`h-2 rounded-full ${indicators.aerosolBurden > 65 ? 'bg-red-500' : indicators.aerosolBurden > 45 ? 'bg-amber-400' : 'bg-cyan-400'}`} style={{ width: `${indicators.aerosolBurden}%` }} /></div>
+          <p className="mt-2 text-xs text-slate-400">{burdenLabel}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Earth state</div>
+          <div className="mt-2 flex items-center gap-2"><span className="text-2xl">{status.emoji}</span><span className="font-black text-white">{status.label}</span></div>
+          <p className="mt-2 text-xs text-slate-400">{status.detail}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400"><Snowflake size={15} /> Arctic ice</div>
+          <div className="mt-2 text-2xl font-black text-white">{indicators.ice}%</div>
+          <div className="mt-2 h-2 rounded-full bg-slate-800"><div className={`h-2 rounded-full ${iceTone.bar}`} style={{ width: `${indicators.ice}%` }} /></div>
+          <p className={`mt-2 text-xs ${iceTone.text}`}>{iceTone.label}</p>
         </div>
       </div>
 
-      <div className="relative z-20 my-2 pointer-events-none">
-        <div className="flex items-center justify-between bg-slate-950/85 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-800 mb-2 shadow-lg">
-          <div className="flex items-center gap-2">
-            <CloudRain className={`w-5 h-5 ${rainPercent < 40 ? 'text-amber-500' : 'text-cyan-400'}`} />
-            <span className="text-xs font-bold text-slate-200">Precipitation & Monsoon Health ({rainPercent}%)</span>
-          </div>
-          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${rainPercent < 40 ? 'bg-amber-950/80 text-amber-300 border border-amber-700' : 'bg-cyan-950/80 text-cyan-300 border border-cyan-700'}`}>
-            {rainPercent < 40 ? 'Drought Warning' : 'Stable Hydrology'}
-          </span>
-        </div>
-
-        <div className="h-20 w-full relative overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-950/60 shadow-inner flex items-center justify-center">
-          {rainPercent >= 40 ? (
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="rainPattern" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <line x1="10" y1="0" x2="5" y2="15" stroke="#38bdf8" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="25" y1="10" x2="20" y2="25" stroke="#0284c7" strokeWidth="1.2" strokeLinecap="round" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#rainPattern)" className="animate-bounce" style={{ animationDuration: `${Math.max(0.3, 150 / rainPercent)}s` }} />
-            </svg>
-          ) : (
-            <div className="flex items-center gap-2 text-amber-400/90 font-bold text-xs uppercase tracking-widest bg-amber-950/40 px-4 py-2 rounded-xl border border-amber-800/50">
-              ⚠️ Severe Hydrological Deficit — Monsoon Disruption
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CloudRain className={`h-5 w-5 ${rainTone.text}`} />
+              <div>
+                <div className="text-sm font-black text-white">Precipitation & monsoon health</div>
+                <div className="text-xs text-slate-400">Driven by rain stability, location choice and aerosol side effects.</div>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="relative z-20 bg-slate-950/90 border border-slate-800 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className={`p-3 rounded-2xl border transition-all duration-500 ${foodPercent >= 70 ? 'bg-emerald-950/80 border-emerald-700 text-emerald-400' : foodPercent >= 40 ? 'bg-amber-950/80 border-amber-700 text-amber-400' : 'bg-red-950/80 border-red-700 text-red-400'}`}>
-            <Wheat className="w-7 h-7 animate-pulse" />
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${rainTone.chip}`}>{indicators.rain}% · {rainTone.label}</span>
           </div>
-          <div>
-            <div className="text-sm font-black text-slate-100 flex items-center gap-2">
-              Global Agricultural & Crop Health ({foodPercent}%)
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${foodPercent >= 70 ? 'bg-emerald-900/60 text-emerald-300' : foodPercent >= 40 ? 'bg-amber-900/60 text-amber-300' : 'bg-red-900/60 text-red-300'}`}>
-                {foodPercent >= 70 ? 'Lush & Healthy' : foodPercent >= 40 ? 'Moderate Yield' : 'Wilted / Photosynthesis Dimmed'}
-              </span>
+          <div className="relative h-40 overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-950 to-slate-900">
+            <div className="absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-amber-950/60 to-transparent" />
+            {indicators.rain >= 25 ? (
+              [...Array(rainDrops)].map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute h-8 w-0.5 -rotate-12 rounded-full bg-cyan-300/80"
+                  style={{ left: `${(i * 37) % 100}%`, top: `${(i * 19) % 70}%`, opacity: Math.max(0.25, indicators.rain / 100), height: `${14 + indicators.rain / 4}px` }}
+                />
+              ))
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-center text-sm font-black uppercase tracking-widest text-red-300">Critical drought / monsoon failure</div>
+            )}
+            {indicators.rain < 45 && (
+              <svg className="absolute bottom-0 left-0 h-20 w-full text-orange-900/70" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <path d="M0 100 L500 100 L500 55 C420 80 380 45 310 70 C245 92 215 45 160 72 C95 100 60 55 0 80 Z" fill="currentColor" />
+                <path d="M70 88 L105 65 M190 92 L220 60 M335 87 L380 58" stroke="#f59e0b" strokeWidth="3" opacity="0.45" />
+              </svg>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Wheat className={`h-5 w-5 ${foodTone.text}`} />
+              <div>
+                <div className="text-sm font-black text-white">Agricultural & crop health</div>
+                <div className="text-xs text-slate-400">Responds to food security, rainfall, sunlight and overcooling pressure.</div>
+              </div>
             </div>
-            <div className="text-[11px] text-slate-400">Impacted by atmospheric dimming and monsoon precipitation.</div>
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${foodTone.chip}`}>{indicators.food}% · {foodTone.label}</span>
           </div>
-        </div>
-
-        <div className="w-full md:w-64 h-16 rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden relative flex items-end justify-around px-3 pb-1">
-          {foodPercent >= 70 ? (
-            <svg className="w-full h-12 text-emerald-400" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 30 Q 12 15 15 0 M 15 10 Q 8 5 5 2 M 15 15 Q 22 10 25 8" />
-              <path d="M35 30 Q 37 12 40 0 M 40 10 Q 33 5 30 2 M 40 15 Q 47 10 50 8" />
-              <path d="M65 30 Q 67 15 70 0 M 70 10 Q 63 5 60 2 M 70 15 Q 77 10 80 8" />
-              <path d="M88 30 Q 90 14 92 0 M 92 10 Q 85 5 82 2 M 92 15 Q 97 10 100 8" />
-            </svg>
-          ) : foodPercent >= 40 ? (
-            <svg className="w-full h-10 text-amber-400" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 30 Q 18 20 22 10 M 22 18 Q 15 14 12 10" />
-              <path d="M35 30 Q 42 18 45 8 M 45 16 Q 38 12 35 8" />
-              <path d="M65 30 Q 72 20 75 10 M 75 18 Q 68 14 65 10" />
-            </svg>
-          ) : (
-            <svg className="w-full h-7 text-red-500/80" viewBox="0 0 100 30" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M10 30 Q 20 28 25 22 M 35 30 Q 40 28 42 24 M 65 30 Q 70 29 72 25 M 85 30 Q 88 28 90 23" />
-              <line x1="0" y1="29" x2="100" y2="29" stroke="#7f1d1d" strokeWidth="2" />
-            </svg>
-          )}
+          <div className="relative h-40 overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-950 via-slate-900 to-emerald-950/20">
+            <div className="absolute inset-x-0 bottom-0 h-11 bg-gradient-to-t from-emerald-950/70 to-transparent" />
+            {[...Array(cropCount)].map((_, i) => {
+              const healthy = indicators.food >= 70;
+              const stressed = indicators.food < 70 && indicators.food >= 35;
+              const height = healthy ? 72 + (i % 3) * 10 : stressed ? 48 + (i % 3) * 7 : 28 + (i % 2) * 6;
+              const color = healthy ? '#34d399' : stressed ? '#fbbf24' : '#ef4444';
+              return (
+                <svg key={i} className="absolute bottom-7" style={{ left: `${8 + i * (84 / Math.max(1, cropCount))}%`, height, width: 28 }} viewBox="0 0 28 90" fill="none">
+                  <path d="M14 90 C14 65 15 35 14 5" stroke={color} strokeWidth="4" strokeLinecap="round" />
+                  <path d="M14 50 C4 45 4 33 13 33" stroke={color} strokeWidth="3" strokeLinecap="round" />
+                  <path d="M15 38 C27 33 26 21 16 21" stroke={color} strokeWidth="3" strokeLinecap="round" />
+                  {indicators.food < 35 && <path d="M4 88 C11 78 20 83 27 72" stroke="#7f1d1d" strokeWidth="2" opacity="0.75" />}
+                </svg>
+              );
+            })}
+            {indicators.food < 45 && <div className="absolute inset-0 bg-orange-950/20" />}
+          </div>
         </div>
       </div>
 
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 text-xs text-slate-300"><b className="text-white">Material selected:</b> {particleMeta[particle].label}</div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 text-xs text-slate-300"><b className="text-white">Public trust:</b> <span className={trustTone.text}>{indicators.trust}% · {trustTone.label}</span></div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 text-xs text-slate-300"><b className="text-white">Temperature:</b> +{indicators.temperature.toFixed(2)}°C</div>
+      </div>
     </div>
   );
 }
