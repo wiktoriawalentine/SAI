@@ -1,7 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useMemo, useState } from 'react';
 import {
   Activity,
   AlertOctagon,
@@ -467,84 +464,67 @@ function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
 }
 
-function Earth3D({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
-  const earthRef = useRef<THREE.Mesh>(null!);
-  const aerosolRef = useRef<THREE.Mesh>(null!);
-  const iceCapRef = useRef<THREE.Mesh>(null!);
-
-  useFrame((_, delta) => {
-    if (earthRef.current) earthRef.current.rotation.y += delta * 0.1;
-    if (aerosolRef.current) aerosolRef.current.rotation.y += delta * 0.15;
-    if (iceCapRef.current) iceCapRef.current.rotation.y += delta * 0.1;
-  });
-
-  const earthColor = useMemo(() => {
-    if (temperature >= 2.2) return '#b91c1c';
-    if (temperature >= 1.7) return '#d97706';
-    if (temperature <= 0.9) return '#155e75';
-    return '#1e3a8a';
+function EarthSunVisualizer({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
+  const earthGradient = useMemo(() => {
+    if (temperature >= 2.2) return 'radial-gradient(circle at 35% 35%, #f87171, #ef4444, #7f1d1d)';
+    if (temperature >= 1.7) return 'radial-gradient(circle at 35% 35%, #fbbf24, #d97706, #78350f)';
+    if (temperature <= 0.9) return 'radial-gradient(circle at 35% 35%, #38bdf8, #0284c7, #0c4a6e)';
+    return 'radial-gradient(circle at 35% 35%, #60a5fa, #2563eb, #1e3a8a)';
   }, [temperature]);
 
-  const iceScale = Math.max(0.1, ice / 100);
-  const aerosolOpacity = Math.min(0.85, aerosolBurden / 100);
+  const iceOpacity = Math.max(0.1, ice / 100);
+  const aerosolOpacity = Math.min(0.8, aerosolBurden / 100);
 
   return (
-    <group position={[2, 0, 0]}>
-      {/* Earth Body */}
-      <mesh ref={earthRef}>
-        <sphereGeometry args={[1.5, 32, 32]} />
-        <meshStandardMaterial color={earthColor} roughness={0.6} metalness={0.1} />
-      </mesh>
+    <div className="w-full h-64 rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-2xl relative flex items-center justify-around overflow-hidden">
+      {/* Background Starfield */}
+      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
 
-      {/* Arctic & Antarctic Ice Caps */}
-      {ice > 0 && (
-        <mesh ref={iceCapRef} scale={[1.51, 1.51 * iceScale, 1.51]}>
-          <sphereGeometry args={[1, 32, 16]} />
-          <meshStandardMaterial color="#f8fafc" transparent opacity={0.8} />
-        </mesh>
-      )}
+      {/* Sun */}
+      <div className="relative flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-500 shadow-[0_0_50px_rgba(251,191,36,0.8)] animate-pulse" />
+        <div className="absolute text-[10px] uppercase font-bold text-amber-200 -bottom-6">Sun</div>
+      </div>
 
-      {/* Stratospheric Aerosol Shield */}
-      {aerosolBurden > 0 && (
-        <mesh ref={aerosolRef}>
-          <sphereGeometry args={[1.8, 32, 32]} />
-          <meshStandardMaterial color="#fef08a" transparent opacity={aerosolOpacity} depthWrite={false} />
-        </mesh>
-      )}
-    </group>
-  );
-}
+      {/* Solar Rays Indicator */}
+      <div className="flex-1 h-0.5 border-t-2 border-dashed border-amber-400/40 mx-4 relative">
+        {aerosolBurden > 0 && (
+          <div className="absolute inset-0 bg-amber-200/30 blur-xs animate-pulse" />
+        )}
+      </div>
 
-function Sun3D() {
-  const sunRef = useRef<THREE.Mesh>(null!);
+      {/* Earth */}
+      <div className="relative flex items-center justify-center">
+        {/* Aerosol Shield Halo */}
+        {aerosolBurden > 0 && (
+          <div
+            className="absolute -inset-4 rounded-full border-2 border-amber-300/60 bg-amber-400/20 blur-sm transition-all duration-700"
+            style={{ opacity: aerosolOpacity }}
+          />
+        )}
 
-  useFrame((_, delta) => {
-    if (sunRef.current) sunRef.current.rotation.y += delta * 0.05;
-  });
+        {/* Earth Sphere */}
+        <div
+          className="w-28 h-28 rounded-full shadow-2xl transition-all duration-700 relative overflow-hidden"
+          style={{ background: earthGradient }}
+        >
+          {/* North Ice Cap */}
+          {ice > 0 && (
+            <div
+              className="absolute top-0 inset-x-2 h-4 bg-slate-100 rounded-b-full transition-all duration-700"
+              style={{ opacity: iceOpacity }}
+            />
+          )}
 
-  return (
-    <group position={[-3.5, 0, 0]}>
-      <mesh ref={sunRef}>
-        <sphereGeometry args={[1.1, 32, 32]} />
-        <meshBasicMaterial color="#fde047" />
-      </mesh>
-      <pointLight intensity={3} distance={15} color="#fef08a" />
-    </group>
-  );
-}
-
-function SolarSystem3DScene({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
-  return (
-    <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl relative">
-      <Canvas camera={{ position: [0, 0, 6.5], fov: 50 }}>
-        <ambientLight intensity={0.2} />
-        <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
-        <Sun3D />
-        <Earth3D temperature={temperature} ice={ice} aerosolBurden={aerosolBurden} />
-        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
-      </Canvas>
-      <div className="absolute bottom-2 left-3 text-[10px] uppercase font-bold text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800 backdrop-blur-md">
-        Interactive 3D Planetary Simulation
+          {/* South Ice Cap */}
+          {ice > 0 && (
+            <div
+              className="absolute bottom-0 inset-x-2 h-4 bg-slate-100 rounded-t-full transition-all duration-700"
+              style={{ opacity: iceOpacity }}
+            />
+          )}
+        </div>
+        <div className="absolute text-[10px] uppercase font-bold text-cyan-200 -bottom-6">Earth</div>
       </div>
     </div>
   );
@@ -731,7 +711,7 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl min-h-[420px] flex flex-col justify-between p-6">
-      <SolarSystem3DScene temperature={tempAnomaly} ice={indicators.ice} aerosolBurden={burdenPercent} />
+      <EarthSunVisualizer temperature={tempAnomaly} ice={indicators.ice} aerosolBurden={burdenPercent} />
 
       <div className="relative z-20 flex justify-between items-start gap-4 mt-4">
         <div className="flex items-center gap-3 bg-slate-950/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-800 shadow-xl">
