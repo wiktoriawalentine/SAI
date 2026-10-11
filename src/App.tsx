@@ -467,7 +467,7 @@ function supportSubtitle(choice: ResearchChoice, knowledge: number): string {
   return lockedEffectText(25, basic[choice], exact[choice], knowledge);
 }
 
-function 3DEarth({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
+function Earth3D({ temperature, ice, aerosolBurden }: { temperature: number; ice: number; aerosolBurden: number }) {
   const earthRef = useRef<THREE.Mesh>(null!);
   const aerosolRef = useRef<THREE.Mesh>(null!);
   const iceCapRef = useRef<THREE.Mesh>(null!);
@@ -515,7 +515,7 @@ function 3DEarth({ temperature, ice, aerosolBurden }: { temperature: number; ice
   );
 }
 
-function 3DSun() {
+function Sun3D() {
   const sunRef = useRef<THREE.Mesh>(null!);
 
   useFrame((_, delta) => {
@@ -539,8 +539,8 @@ function SolarSystem3DScene({ temperature, ice, aerosolBurden }: { temperature: 
       <Canvas camera={{ position: [0, 0, 6.5], fov: 50 }}>
         <ambientLight intensity={0.2} />
         <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
-        <3DSun />
-        <3DEarth temperature={temperature} ice={ice} aerosolBurden={aerosolBurden} />
+        <Sun3D />
+        <Earth3D temperature={temperature} ice={ice} aerosolBurden={aerosolBurden} />
         <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
       </Canvas>
       <div className="absolute bottom-2 left-3 text-[10px] uppercase font-bold text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800 backdrop-blur-md">
