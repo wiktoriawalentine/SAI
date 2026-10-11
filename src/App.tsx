@@ -183,16 +183,8 @@ const sourceThemes = [
     detail: 'Basis for aerosol-burden and rainfall penalties. Sulfate aerosols can heat the stratosphere and affect circulation and hydrology.',
   },
   {
-    title: 'Haywood et al. (2013) — asymmetric forcing and Sahel rainfall',
-    detail: 'Basis for regional inequality events. Hemispherically asymmetric aerosol loading can create strong rainfall differences, including Sahel drought pressure.',
-  },
-  {
     title: 'Parker & Irvine (2018) — termination shock',
     detail: 'Basis for the interruption rule. Sudden termination after SAI can cause very rapid warming, giving natural and human systems less time to adapt.',
-  },
-  {
-    title: 'Tracy et al. (2022) and Fu et al. (2025) — health/ecosystems and drought inequality',
-    detail: 'Basis for uncertainty events and trust loss. SAI may affect public health, ecosystems, water, agriculture and unequal drought exposure.',
   },
 ];
 
@@ -582,7 +574,7 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           <InfoCard>
             <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><BookOpen className="text-blue-400" /> Research-Grounded Mechanics</h2>
             <p className="text-slate-300 leading-relaxed">
-              Every choice directly models empirical scientific literature: from Visioni et al. (seasonal injection) to Proctor et al. (agricultural dimming penalties) and Parker & Irvine (termination shock).
+              Game options illustrate research-supported climate mechanisms and trade-offs, from Visioni et al. (seasonal injection) to Proctor et al. (agricultural sunlight effects) and Parker & Irvine (termination shock). Numerical scores and event probabilities are educational assumptions.
             </p>
           </InfoCard>
 
@@ -775,17 +767,17 @@ function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'dr
 
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-1">
-            <AlertTriangle className="w-3.5 h-3.5" /> Empirical Hazard Event
+            <AlertTriangle className="w-3.5 h-3.5" /> Research-Inspired Hazard Event
           </div>
           <h4 className="text-base font-black text-white">
             {eventType === 'chemistry' && 'Stratospheric microphysical anomaly'}
             {eventType === 'drought' && 'Monsoon shift and regional drought'}
-            {eventType === 'ecosystem' && 'Public health and ecosystem scrutiny'}
+            {eventType === 'ecosystem' && 'Agricultural and environmental stress'}
           </h4>
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
             {eventType === 'chemistry' && 'Laboratory reaction assumptions faced unforeseen chlorine chemistry in the stratosphere.'}
             {eventType === 'drought' && 'Targeting polar latitudes caused a lower-latitude shift in precipitation cycles, stressing regional monsoons.'}
-            {eventType === 'ecosystem' && 'Localized crop and regional health reports created public scrutiny and trust fluctuations.'}
+            {eventType === 'ecosystem' && 'Changes in sunlight and rainfall may affect crop performance and create public concern about environmental side effects.'}
           </p>
         </div>
       </div>
@@ -1112,8 +1104,8 @@ export function App() {
         next.food -= 4;
         next.rain -= 3;
         next.trust -= 4;
-        event = 'Public health and ecosystem variance: localized side-effect reports increased public scrutiny.';
-        reportTitle = 'Decade Report: Ecosystem Scrutiny';
+        event = 'Agricultural and environmental uncertainty: reported crop impacts increased public scrutiny.';
+        reportTitle = 'Decade Report: Agricultural and Environmental Scrutiny';
         eventType = 'ecosystem';
       }
     }
