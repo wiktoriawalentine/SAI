@@ -246,7 +246,7 @@ function applyBurdenPressure(next: Indicators): string[] {
   if (next.aerosolBurden > 55) {
     next.rain -= 2;
     next.food -= 1;
-    notes.push('Simpson et al. (2019): Aerosol burden >55% caused stratospheric heating and hydroclimate disruption.');
+    notes.push('High aerosol burden >55% caused stratospheric heating and hydroclimate disruption.');
   }
   if (next.aerosolBurden > 75) {
     next.rain -= 4;
@@ -333,32 +333,32 @@ function strategyExplanation(entry: StrategyEntry, knowledge: number): string[] 
     return notes;
   }
 
-  notes.push('📊 Research Insight (Cohen et al. 2025): Temperature targets control global heat stress, but regional hydroclimate shifts depend heavily on injection geometry.');
+  notes.push('📊 Research insight: Temperature targets control global heat stress, but regional hydroclimate shifts depend heavily on injection geometry.');
   if (entry.target === 'none') {
     notes.push('No SAI avoids aerosol side effects, but unmitigated climate warming severely degrades Arctic ice and agricultural resilience.');
   } else if (entry.target === 'moderate') {
     notes.push('Moderate cooling near 1.5°C achieves a balanced trade-off between heat extreme reduction and hydrological perturbation.');
   } else if (entry.target === 'aggressive') {
-    notes.push('Proctor et al. (2018): Aggressive cooling reduces thermal stress, but decreased direct solar radiation penalizes photosynthetic crop yields.');
+    notes.push('Aggressive cooling reduces thermal stress, but decreased direct solar radiation can penalize photosynthetic crop yields.');
   } else {
-    notes.push('Simpson et al. (2019): Emergency cooling strongly alters stratospheric heating, triggering significant precipitation deficits.');
+    notes.push('Emergency cooling can strongly alter stratospheric heating and trigger significant precipitation deficits.');
   }
 
   if (entry.season === 'autumn') {
-    notes.push('Visioni et al. (2020): Autumn injection maximizes Arctic sea-ice preservation while mitigating monsoonal rainfall disruptions over India and South America.');
+    notes.push('Autumn injection is treated as favourable for Arctic sea-ice preservation and for reducing some monsoon/rainfall trade-offs.');
   }
   if (entry.location === 'polar') {
-    notes.push('Duffey et al. (2023): Polar injection effectively concentrates cooling over high latitudes, but disrupts lower-latitude precipitation via ITCZ shifts.');
+    notes.push('Polar injection concentrates cooling over high latitudes, but can disrupt lower-latitude precipitation via circulation shifts.');
   }
 
   if (knowledge >= 60) {
-    notes.push('🧪 Microphysics & Chemistry Insight (Vattioni et al. 2023, 2025): Material selection determines stratospheric chemistry and aerosol lifetime.');
+    notes.push('🧪 Microphysics and chemistry insight: Material selection determines stratospheric chemistry and aerosol lifetime.');
     if (entry.particle === 'sulfate') {
-      notes.push('Simpson et al. (2019): Sulfate aerosols heat the lower stratosphere and promote ozone destruction pathways.');
+      notes.push('Sulfate aerosols can heat the lower stratosphere and contribute to ozone-chemistry concerns.');
     } else if (entry.particle === 'caco3') {
-      notes.push('Vattioni et al. (2025): Calcite particles neutralize stratospheric acids, preserving stratospheric ozone and reducing agricultural dimming penalties.');
+      notes.push('Calcite particles are treated as a partly known solid alternative that may reduce some sulfate-related limitations, but still requires research.');
     } else if (entry.particle === 'alumina') {
-      notes.push('Vattioni et al. (2023): Solid alumina particles avoid sulfate thermal heating, but carry unconstrained surface chlorine chemistry risks.');
+      notes.push('Solid alumina particles are treated as high-performance but chemically uncertain, especially for surface-reaction and ozone pathways.');
     } else if (entry.particle === 'future') {
       notes.push('Engineered nanoparticles optimize optical scattering efficiency while minimizing microphysical coagulation and burden penalties.');
     }
@@ -388,8 +388,8 @@ function targetSubtitle(choice: TargetChoice, knowledge: number): string {
   const basic: Record<TargetChoice, string> = {
     none: 'No aerosol side effects, but baseline warming continues.',
     moderate: 'Balanced intervention near 1.5°C. Low side effects.',
-    aggressive: 'Reduces heat stress, but dimming reduces crop photosynthesis (Proctor et al. 2018).',
-    emergency: 'Extreme action. Rapid temperature drop, high monsoon disruption (Simpson et al. 2019).',
+    aggressive: 'Reduces heat stress, but dimming can reduce crop photosynthesis.',
+    emergency: 'Extreme action. Rapid temperature drop with high monsoon-disruption risk.',
   };
   const exact: Record<TargetChoice, string> = {
     none: 'Temp follows warming; ice -6; food -4; rain -3; trust +2; burden -15; infrastructure +2.',
@@ -405,12 +405,12 @@ function seasonSubtitle(choice: SeasonChoice, knowledge: number, paused: boolean
   const basic: Record<SeasonChoice, string> = {
     annual: 'Reference strategy. Continuous baseline injection.',
     spring: 'Efficient seasonal cooling for Northern Hemisphere summer.',
-    autumn: 'Optimizes Arctic sea ice and India monsoon trade-off (Visioni et al. 2020).',
+    autumn: 'Improves Arctic sea ice and selected monsoon/rainfall trade-offs.',
   };
   const exact: Record<SeasonChoice, string> = {
     annual: 'Ice +2; burden +1.',
     spring: 'Ice +1; rain -2.',
-    autumn: 'Ice +8; rain +2 (Visioni et al. 2020).',
+    autumn: 'Ice +8; rain +2.',
   };
   return lockedEffectText(40, basic[choice], exact[choice], knowledge);
 }
@@ -420,12 +420,12 @@ function locationSubtitle(choice: LocationChoice, knowledge: number, paused: boo
   const basic: Record<LocationChoice, string> = {
     tropical: 'Equatorial injection. Global aerosol spread with balanced forcing.',
     subtropical: 'Intermediate strategy balancing global and polar cooling.',
-    polar: 'Strong high-latitude ice rescue, but shifts ITCZ rainfall (Duffey et al. 2023).',
+    polar: 'Strong high-latitude ice rescue, but can shift lower-latitude rainfall.',
   };
   const exact: Record<LocationChoice, string> = {
     tropical: 'Rain +1.',
     subtropical: 'Ice +3; rain -1.',
-    polar: 'Ice +12; rain -6; food -3 (Duffey et al. 2023).',
+    polar: 'Ice +12; rain -6; food -3.',
   };
   return lockedEffectText(55, basic[choice], exact[choice], knowledge);
 }
@@ -434,9 +434,9 @@ function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boo
   if (paused) return 'No injection this decade.';
   if (choice === 'future' && !futureUnlocked) return 'Locked: needs ≥80% knowledge and year ≥2090.';
   const basic: Record<ParticleChoice, string> = {
-    sulfate: 'Baseline material. Known cooling, but causes stratospheric heating (Simpson et al. 2019).',
-    caco3: 'Solid calcite. Neutralizes stratospheric acids, reducing crop penalties (Vattioni et al. 2025).',
-    alumina: 'High scattering performance, but chlorine surface chemistry is unconstrained (Vattioni et al. 2023).',
+    sulfate: 'Baseline material. Known cooling, but linked to stratospheric heating concerns.',
+    caco3: 'Solid calcite. Partly known alternative with chemistry and ageing uncertainty.',
+    alumina: 'High scattering performance, but surface chemistry remains uncertain.',
     future: 'Advanced engineered particle. Maximum efficiency with minimal aerosol burden.',
   };
   const caco3Trust = knowledge < 60 ? 'trust -2' : 'no trust penalty';
@@ -444,8 +444,8 @@ function materialSubtitle(choice: ParticleChoice, knowledge: number, paused: boo
 
   const exact: Record<ParticleChoice, string> = {
     sulfate: 'Rain -1; burden +3.',
-    caco3: `Knowledge +1; food +1; ${caco3Trust}; burden +3 (Vattioni et al. 2025).`,
-    alumina: `Knowledge +2; rain -1; ${aluminaTrust}; burden +3 (Vattioni et al. 2023).`,
+    caco3: `Knowledge +1; food +1; ${caco3Trust}; burden +3.`,
+    alumina: `Knowledge +2; rain -1; ${aluminaTrust}; burden +3.`,
     future: 'Knowledge +3; food +5; rain +2; burden +2.',
   };
   return lockedEffectText(70, basic[choice], exact[choice], knowledge);
@@ -570,9 +570,9 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           </InfoCard>
 
           <InfoCard>
-            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game Rules & Scientific Mastery</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game rules overview</h2>
             <p className="text-slate-300 leading-relaxed">
-              Survive 10 decades until 2130. You receive **7 GP** each decade. **If any metric collapses to 0%, the game immediately ends!** Test choices to build Scientific Mastery!
+              Your task is to govern SAI from 2030 to 2130. Each decade gives you 7 Governance Points, and every selected action uses part of this limited capacity. You choose one option in each level, add an optional support action, complete the decade, and then read the result report.
             </p>
           </InfoCard>
         </div>
@@ -589,6 +589,76 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
           </div>
           <div className="mt-5 rounded-2xl border border-amber-500/40 bg-amber-950/20 p-4 text-sm text-amber-100">
             <b>Scientific disclaimer:</b> This game translates published research trends into simplified scoring rules. The directions of the effects are research-based, but the exact point values and event probabilities are not climate-model outputs. The game is an educational governance simulation, not a predictive climate model.
+          </div>
+        </InfoCard>
+
+        <InfoCard>
+          <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><Scale className="text-amber-400" /> Game rules: how to play</h2>
+          <div className="grid gap-4 md:grid-cols-2 text-sm text-slate-300">
+            <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <b className="text-white">1. Play decade by decade</b>
+              <p className="mt-1">The game starts in 2030 and advances in ten-year steps until 2130. After each decade, a report explains how the selected choices changed the indicators.</p>
+            </div>
+            <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <b className="text-white">2. Spend Governance Points</b>
+              <p className="mt-1">Each decade gives you 7 GP. Every target, material, location, season and support action has a cost. If the selected package costs more than 7 GP, the decade cannot be completed.</p>
+            </div>
+            <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <b className="text-white">3. Choose one option in each level</b>
+              <p className="mt-1">Level 1 sets the temperature target, Level 2 sets the injection season, Level 3 sets the injection location, and Level 4 selects the aerosol material.</p>
+            </div>
+            <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+              <b className="text-white">4. Add one support action</b>
+              <p className="mt-1">Support actions use GP but can improve scientific knowledge, monitoring capacity, public trust, infrastructure, food security or rainfall resilience.</p>
+            </div>
+            <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 md:col-span-2">
+              <b className="text-white">5. Watch the critical indicators</b>
+              <p className="mt-1">The visible result is tracked through temperature, ice, food, rainfall, trust, knowledge, aerosol burden and infrastructure. If a critical resilience indicator reaches 0%, the game ends. Stopping SAI suddenly after repeated deployment can also trigger termination shock.</p>
+            </div>
+          </div>
+        </InfoCard>
+
+        <InfoCard>
+          <h2 className="mb-3 flex items-center gap-2 text-2xl font-black text-white"><FlaskConical className="text-purple-400" /> Research gap: future particle development</h2>
+          <div className="rounded-xl border-l-4 border-purple-400 bg-purple-950/20 p-4 text-lg text-purple-100">
+            Can alternative engineered nanoparticles outperform sulfate aerosols while reducing environmental side effects?
+          </div>
+          <p className="mt-4 text-slate-300 leading-relaxed">
+            Sulfate is the known baseline. CaCO₃/calcite and alumina are solid-particle alternatives, but their lifetime, optical behaviour, surface chemistry, ozone effects and particle ageing remain uncertain. The future engineered particle is locked because unknown particles should not be deployed without research.
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-3 text-sm text-slate-300">
+            <div className="rounded-xl border border-cyan-500/30 bg-slate-950/60 p-4">
+              <h3 className="mb-2 flex items-center gap-2 font-bold text-cyan-200"><Microscope size={16} /> Laboratory</h3>
+              <ul className="space-y-1">
+                <li>• aerosol generator</li>
+                <li>• particle synthesis reactor</li>
+                <li>• particle sizing, for example SMPS</li>
+                <li>• coagulation chamber</li>
+                <li>• surface-chemistry reactor</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-emerald-500/30 bg-slate-950/60 p-4">
+              <h3 className="mb-2 flex items-center gap-2 font-bold text-emerald-200"><Activity size={16} /> Measurements</h3>
+              <ul className="space-y-1">
+                <li>• particle size distribution</li>
+                <li>• optical scattering</li>
+                <li>• agglomeration behaviour</li>
+                <li>• settling velocity</li>
+                <li>• ozone-relevant surface reactions</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-purple-500/30 bg-slate-950/60 p-4">
+              <h3 className="mb-2 flex items-center gap-2 font-bold text-purple-200"><Brain size={16} /> Models</h3>
+              <ul className="space-y-1">
+                <li>• atmospheric transport model</li>
+                <li>• aerosol microphysics model</li>
+                <li>• climate model</li>
+                <li>• crop / food-security impact model</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-5 rounded-2xl border border-purple-500/30 bg-slate-950/50 p-4 text-sm text-slate-300">
+            The material comparison is deliberately incomplete at the beginning of the game. Players unlock deeper interpretation by increasing scientific knowledge through laboratory testing and monitoring.
           </div>
         </InfoCard>
       </div>
@@ -691,9 +761,9 @@ function EventGraphicIllustration({ eventType }: { eventType?: 'chemistry' | 'dr
             <AlertTriangle className="w-3.5 h-3.5" /> Empirical Hazard Event
           </div>
           <h4 className="text-base font-black text-white">
-            {eventType === 'chemistry' && 'Stratospheric Microphysical Anomaly (Vattioni et al. 2023)'}
-            {eventType === 'drought' && 'Monsoon Shift & Regional Drought (Duffey et al. 2023)'}
-            {eventType === 'ecosystem' && 'Public Health & Ecosystem Scrutiny (Tracy et al. 2022)'}
+            {eventType === 'chemistry' && 'Stratospheric microphysical anomaly'}
+            {eventType === 'drought' && 'Monsoon shift and regional drought'}
+            {eventType === 'ecosystem' && 'Public health and ecosystem scrutiny'}
           </h4>
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
             {eventType === 'chemistry' && 'Laboratory reaction assumptions faced unforeseen chlorine chemistry in the stratosphere.'}
@@ -764,7 +834,7 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
             </svg>
           ) : (
             <div className="flex items-center gap-2 text-amber-400/90 font-bold text-xs uppercase tracking-widest bg-amber-950/40 px-4 py-2 rounded-xl border border-amber-800/50">
-              ⚠️ Severe Hydrological Deficit — Monsoon Disruption (Haywood et al. 2013)
+              ⚠️ Severe Hydrological Deficit — Monsoon Disruption
             </div>
           )}
         </div>
@@ -782,7 +852,7 @@ function DynamicEarthCanvas({ indicators, target, particle }: { indicators: Indi
                 {foodPercent >= 70 ? 'Lush & Healthy' : foodPercent >= 40 ? 'Moderate Yield' : 'Wilted / Photosynthesis Dimmed'}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400">Impacted by atmospheric dimming (Proctor et al. 2018) and monsoon precipitation.</div>
+            <div className="text-[11px] text-slate-400">Impacted by atmospheric dimming and monsoon precipitation.</div>
           </div>
         </div>
 
@@ -817,12 +887,12 @@ function ResearchInsightTracker({ knowledge, futureUnlocked }: { knowledge: numb
   const items = [
     {
       threshold: 30,
-      title: '30% Knowledge: Hydroclimate Insights (Cohen et al. 2025)',
+      title: '30% Knowledge: hydroclimate insights',
       text: 'Unlocks target parameter changes and regional monsoon trade-off analysis.',
     },
     {
       threshold: 60,
-      title: '60% Knowledge: Microphysics & Ozone Chemistry (Vattioni et al. 2023, 2025)',
+      title: '60% Knowledge: microphysics and ozone chemistry',
       text: 'Unlocks solid particle chemistry, stratospheric heating, and ozone feedback insights.',
     },
     {
@@ -1002,21 +1072,21 @@ export function App() {
         next.knowledge += 3;
         next.trust -= 8;
         next.rain -= 4;
-        event = 'Material chemistry surprise: laboratory assumptions faced stratospheric chemistry uncertainties (Vattioni et al. 2023).';
+        event = 'Material chemistry surprise: laboratory assumptions faced stratospheric chemistry uncertainties.';
         reportTitle = 'Decade Report: Material Surprises';
         eventType = 'chemistry';
       } else if (location === 'polar' && eventRoll < 0.70) {
         next.rain -= 6;
         next.food -= 4;
         next.trust -= 5;
-        event = 'Regional hydroclimate shift: polar targeting cooled high latitudes but shifted lower-latitude rainfall (Duffey et al. 2023).';
+        event = 'Regional hydroclimate shift: polar targeting cooled high latitudes but shifted lower-latitude rainfall.';
         reportTitle = 'Decade Report: Regional Hydroclimate Shift';
         eventType = 'drought';
       } else {
         next.food -= 4;
         next.rain -= 3;
         next.trust -= 4;
-        event = 'Public health & ecosystem variance: localized side-effect reports increased public scrutiny (Tracy et al. 2022).';
+        event = 'Public health and ecosystem variance: localized side-effect reports increased public scrutiny.';
         reportTitle = 'Decade Report: Ecosystem Scrutiny';
         eventType = 'ecosystem';
       }
@@ -1080,7 +1150,7 @@ export function App() {
               CRITICAL SYSTEM FAILURE
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white">Termination Shock Triggered</h1>
-            <p className="mt-2 text-sm text-red-300 font-mono">Reference Paper: Parker & Irvine (2018) — "The Risk of Termination Shock From Solar Geoengineering"</p>
+            <p className="mt-2 text-sm text-red-300 font-mono">Termination-shock mechanism</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 text-left text-sm">
@@ -1104,7 +1174,7 @@ export function App() {
           </div>
 
           <div className="rounded-2xl border border-purple-800/60 bg-purple-950/30 p-5 text-left text-xs space-y-2">
-            <b className="text-purple-300 text-sm block">🔬 Governance Takeaway (Parker & Irvine 2018):</b>
+            <b className="text-purple-300 text-sm block">🔬 Governance takeaway:</b>
             <p className="text-slate-300 leading-relaxed">
               Termination shock is not an inherent flaw in aerosol physics, but a <b>failure of governance continuity</b>. To avoid termination shock, solar geoengineering must either be maintained continuously alongside aggressive decarbonization or phased down very slowly over many decades.
             </p>
